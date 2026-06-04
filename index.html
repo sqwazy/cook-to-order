@@ -1,0 +1,1433 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mombasa CTO - Local Delicacies</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;800&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+
+        /* Splash Screen Animations */
+        .animate-title {
+            animation: fadeSlideUp 1.2s ease-out forwards;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .delay-1 {
+            animation-delay: 0.5s;
+        }
+
+        .delay-2 {
+            animation-delay: 1.5s;
+        }
+
+        .delay-3 {
+            animation-delay: 2.2s;
+        }
+
+        @keyframes fadeSlideUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-out-splash {
+            animation: fadeOut 1s ease-in-out forwards;
+        }
+
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                visibility: hidden;
+            }
+        }
+
+        /* 360 Rotation Classes */
+        #main-image {
+            transition: all 0.7s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .dynamic-text {
+            transition: all 0.5s ease-out;
+        }
+
+        /* Hide Scrollbars but allow scrolling */
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Custom Date Picker Icon Styling for dark mode */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body class="bg-[#2c1e16] w-full relative text-stone-200 overflow-x-hidden">
+
+    <div id="intro-splash"
+        class="fixed inset-0 z-[100] bg-[#1a110c] flex flex-col items-center justify-center text-center px-6">
+        <p class="text-amber-500 font-semibold tracking-[0.2em] uppercase text-sm mb-4 animate-title delay-1">A
+            Mission-Driven Platform</p>
+        <h1
+            class="text-4xl md:text-5xl lg:text-6xl font-extrabold text-white animate-title delay-2 drop-shadow-lg mb-6">
+            Empowering Mombasa's Local Artisans.</h1>
+        <p class="text-stone-400 max-w-lg text-sm md:text-base animate-title delay-3 leading-relaxed">Bringing quality,
+            affordability, and authentic home-cooked meals right to your door.</p>
+    </div>
+
+    <div
+        class="absolute top-1/4 left-1/4 w-[300px] lg:w-[500px] h-[300px] lg:h-[500px] bg-amber-600/20 rounded-full mix-blend-screen filter blur-[100px] lg:blur-[120px] z-0 pointer-events-none">
+    </div>
+    <div
+        class="absolute top-[80vh] right-1/4 w-[250px] lg:w-[400px] h-[250px] lg:h-[400px] bg-orange-900/30 rounded-full mix-blend-screen filter blur-[80px] lg:blur-[100px] z-0 pointer-events-none">
+    </div>
+
+    <header class="relative w-full min-h-[100dvh] flex flex-col items-center justify-center">
+
+        <nav
+            class="fixed top-0 left-0 w-full flex justify-between items-center z-[100] px-6 py-4 lg:px-12 lg:py-5 bg-[#1a110c]/90 backdrop-blur-md border-b border-white/10 transition-all duration-300">
+
+            <div onclick="scrollToTop()" class="flex items-center gap-2 lg:gap-3 cursor-pointer group">
+                <div
+                    class="bg-amber-500/20 p-2 rounded-lg text-amber-500 group-hover:bg-amber-500 group-hover:text-white transition">
+                    <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" stroke-width="2"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z">
+                        </path>
+                    </svg>
+                </div>
+                <span class="text-lg lg:text-xl font-bold tracking-widest text-white">MOMBASA<span
+                        class="text-amber-500">CTO.</span></span>
+            </div>
+
+            <div class="flex space-x-4 lg:space-x-5 items-center text-stone-300">
+                <button class="hidden lg:block w-5 h-5 hover:text-amber-500 transition"><svg fill="none"
+                        stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg></button>
+                <div onclick="openMyOrders()" class="hidden md:flex items-center gap-2 cursor-pointer group">
+                    <div class="p-2 rounded-full bg-white/5 group-hover:bg-amber-500/20 transition-colors">
+                        <svg class="w-4 h-4 text-stone-400 group-hover:text-amber-500 transition-colors" fill="none"
+                            stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01">
+                            </path>
+                        </svg>
+                    </div>
+                    <span class="text-sm font-bold text-stone-300 group-hover:text-white transition-colors">My
+                        Orders</span>
+                </div>
+                <button onclick="openCart()" class="w-5 h-5 relative hover:text-amber-500 transition lg:mr-2 group">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z">
+                        </path>
+                    </svg>
+                    <span
+                        class="cart-badge absolute -top-2 -right-2 bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-md transition-all duration-300">0</span>
+                </button>
+                <div class="hidden lg:block h-5 w-px bg-white/20 mx-1"></div>
+
+                <button onclick="openAuth('login')"
+                    class="hidden lg:block text-sm font-semibold hover:text-amber-400 transition">Log In</button>
+                <button onclick="openAuth('signup')"
+                    class="hidden lg:block bg-amber-600 hover:bg-amber-500 text-white px-5 py-2 rounded-full text-sm font-bold transition shadow-lg shadow-amber-900/50">Sign
+                    Up</button>
+                <div class="hidden lg:block h-5 w-px bg-white/20 mx-1"></div>
+
+                <button onclick="openNav()" class="lg:hidden w-6 h-6 hover:text-amber-500 transition"><svg fill="none"
+                        stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg></button>
+            </div>
+        </nav>
+        <div
+            class="w-full max-w-[1400px] mx-auto relative pt-28 md:pt-36 lg:pt-12 px-6 lg:px-10 flex flex-col lg:flex-row items-center justify-center lg:justify-start z-10 pb-12 lg:pb-0">
+            <div
+                class="w-full lg:w-[40%] relative flex justify-center items-center h-[280px] md:h-[350px] lg:h-[500px] mb-4 lg:mb-0">
+                <div class="flex items-center justify-center gap-3 md:gap-8 w-full max-w-full">
+                    <button onclick="prevDish()"
+                        class="shrink-0 lg:hidden z-30 bg-white/10 backdrop-blur-md p-2.5 md:p-3 rounded-full text-white hover:bg-white/20 hover:scale-110 transition border border-white/40 shadow-[0_0_15px_rgba(255,255,255,0.15)]">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                    </button>
+                    <img id="main-image"
+                        src="https://images.unsplash.com/photo-1631515243349-e0cb75fb8d3a?q=80&w=600&auto=format&fit=crop"
+                        class="shrink-0 w-[200px] h-[200px] sm:w-[220px] sm:h-[220px] md:w-[320px] md:h-[320px] lg:w-[360px] lg:h-[360px] object-cover rounded-full shadow-2xl shadow-black/60 z-20 relative lg:-top-6"
+                        alt="Main Dish">
+
+                    <button onclick="nextDish()"
+                        class="shrink-0 lg:hidden z-30 bg-white/10 backdrop-blur-md p-2.5 md:p-3 rounded-full text-white hover:bg-white/20 hover:scale-110 transition border border-white/40 shadow-[0_0_15px_rgba(255,255,255,0.15)]">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="w-full lg:w-[35%] flex flex-col justify-center items-center lg:items-start text-center lg:text-left pb-8 md:pb-12 lg:pb-20 pl-0 lg:pl-4 z-20 dynamic-text"
+                id="center-text">
+                <p id="tagline"
+                    class="text-xs lg:text-sm font-semibold tracking-wide text-amber-500 mb-2 uppercase drop-shadow-md">
+                    #1 Most loved dish</p>
+                <h1 id="title-top"
+                    class="text-4xl md:text-6xl lg:text-6xl font-light tracking-tight leading-none text-stone-300 break-words">
+                    SWAHILI</h1>
+                <h1 id="title-bottom"
+                    class="text-4xl md:text-6xl lg:text-6xl font-extrabold tracking-tighter leading-none text-white mt-1 drop-shadow-lg break-words">
+                    BIRIANI</h1>
+                <div id="hero-price"
+                    class="text-2xl md:text-3xl font-extrabold text-amber-500 mt-3 ml-3 mb-4 tracking-wide transition-all duration-300">
+                    Ksh 850</div>
+
+                <div class="mt-8 lg:mt-12">
+                    <button onclick="openOrderModal(currentIndex)"
+                        class="flex items-center text-sm font-semibold hover:text-amber-400 transition group text-stone-200 relative">
+                        <div
+                            class="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-amber-600 text-white shadow-xl shadow-amber-900/50 flex items-center justify-center mr-3 md:mr-4 group-hover:bg-amber-500 group-hover:scale-105 transition transform duration-300">
+                            <svg class="w-4 h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" stroke-width="2"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path>
+                            </svg>
+                        </div>
+                        <span class="text-base md:text-lg tracking-wide">Add to Cart</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="w-full lg:w-[25%] flex justify-center lg:justify-end items-center pb-6 lg:pb-20 z-20 dynamic-text"
+                id="right-card">
+                <div
+                    class="bg-[#3d2a1d]/60 backdrop-blur-xl border border-white/10 rounded-[2rem] p-6 md:p-8 shadow-2xl shadow-black/40 w-full max-w-[320px] md:max-w-[380px] lg:max-w-[320px]">
+                    <div class="flex items-start justify-between border-b border-white/10 pb-4 lg:pb-5 mb-4 lg:mb-5">
+                        <div>
+                            <h3 id="chef-name" class="font-bold text-lg md:text-xl text-white">Chef Ali</h3>
+                            <p class="text-[10px] font-semibold text-amber-500 uppercase tracking-wider mt-1">Mombasa
+                                Original</p>
+                        </div>
+                        <button onclick="toggleHeroLike()"
+                            class="flex flex-col items-center group cursor-pointer focus:outline-none">
+                            <div
+                                class="bg-black/20 group-hover:bg-red-500/20 p-2 rounded-full transition-colors duration-300 border border-transparent group-hover:border-red-500/30">
+                                <svg id="hero-like-icon"
+                                    class="w-5 h-5 lg:w-6 lg:h-6 text-stone-400 group-hover:scale-110 group-hover:text-red-500 transition-all duration-300"
+                                    fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd"
+                                        d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"
+                                        clip-rule="evenodd"></path>
+                                </svg>
+                            </div>
+                            <span id="likes-count"
+                                class="text-[9px] lg:text-[10px] font-bold text-stone-400 mt-1 transition-colors duration-300 group-hover:text-stone-300">342
+                                LIKES</span>
+                        </button>
+                    </div>
+                    <p id="teaser-text"
+                        class="text-xs md:text-sm text-stone-300 leading-relaxed mb-6 h-[70px] md:h-[60px] lg:h-[80px]">
+                        Aromatic basmati rice slow-cooked with tender marinated beef, rich coastal spices, and thick
+                        yogurt gravy.
+                    </p>
+                    <div class="flex flex-col">
+                        <button onclick="openSellerModal()"
+                            class="w-full py-3 bg-[#2c1e16]/80 hover:bg-[#1a110c] border border-white/5 rounded-xl text-sm font-semibold text-stone-200 transition flex items-center justify-center shadow-inner">
+                            <svg class="w-4 h-4 mr-2 text-amber-500" fill="none" stroke="currentColor" stroke-width="2"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                            </svg>
+                            Seller Info
+                        </button>
+                    </div>
+                    <div class="mt-5 lg:mt-6 p-4 bg-white/5 border border-white/5 rounded-xl">
+                        <div class="flex items-center text-amber-500 mb-2">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" stroke-width="2"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <h4 class="text-[10px] lg:text-xs font-bold uppercase tracking-wider">Chef's Schedule</h4>
+                        </div>
+                        <ul
+                            class="text-[10px] lg:text-[11px] text-stone-400 space-y-1.5 ml-5 list-disc marker:text-amber-700/50">
+                            <li>Order by <strong class="text-stone-200 font-semibold">7:00 PM</strong> for Morning
+                                delivery</li>
+                            <li>Order by <strong class="text-stone-200 font-semibold">10:00 AM</strong> for Evening
+                                delivery</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="hidden lg:flex absolute bottom-6 left-20 w-full justify-start items-center z-30 px-0">
+            <div class="flex gap-8 items-end" id="thumbnail-container">
+                <div id="thumb-0" onclick="swapDish(0, true)"
+                    class="w-24 flex flex-col items-center cursor-pointer transition duration-300 transform scale-110 -translate-y-2">
+                    <img src="https://images.unsplash.com/photo-1631515243349-e0cb75fb8d3a?q=80&w=150&auto=format&fit=crop"
+                        class="w-16 h-16 rounded-full object-cover mb-2 shadow-[0_0_20px_rgba(245,158,11,0.6)]"
+                        alt="Thumb">
+                    <span
+                        class="text-xs font-bold text-center leading-tight text-amber-500 drop-shadow-md">Biriani</span>
+                </div>
+                <div id="thumb-1" onclick="swapDish(1, true)"
+                    class="w-24 flex flex-col items-center cursor-pointer opacity-50 hover:opacity-100 transition duration-300 transform hover:-translate-y-1">
+                    <img src="https://images.unsplash.com/photo-1541529086526-db283c563270?q=80&w=150&auto=format&fit=crop"
+                        class="w-16 h-16 rounded-full object-cover shadow-md shadow-black/50 mb-2" alt="Thumb">
+                    <span class="text-xs font-medium text-center leading-tight text-stone-400">Viazi Karai</span>
+                </div>
+                <div id="thumb-2" onclick="swapDish(2, true)"
+                    class="w-24 flex flex-col items-center cursor-pointer opacity-50 hover:opacity-100 transition duration-300 transform hover:-translate-y-1">
+                    <img src="https://images.unsplash.com/photo-1515003197210-e0cd71810b5f?q=80&w=150&auto=format&fit=crop"
+                        class="w-16 h-16 rounded-full object-cover shadow-md shadow-black/50 mb-2" alt="Thumb">
+                    <span class="text-xs font-medium text-center leading-tight text-stone-400">Mabuyu</span>
+                </div>
+                <div id="thumb-3" onclick="swapDish(3, true)"
+                    class="w-24 flex flex-col items-center cursor-pointer opacity-50 hover:opacity-100 transition duration-300 transform hover:-translate-y-1">
+                    <img src="https://images.unsplash.com/photo-1578985545062-69928b1d9587?q=80&w=150&auto=format&fit=crop"
+                        class="w-16 h-16 rounded-full object-cover shadow-md shadow-black/50 mb-2" alt="Thumb">
+                    <span class="text-xs font-medium text-center leading-tight text-stone-400">Spiced Cake</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main id="menu-section"
+        class="relative w-full bg-[#1a110c]/80 backdrop-blur-sm border-t border-white/5 py-16 lg:py-24 z-20">
+        <div class="w-full max-w-[1400px] mx-auto px-6 lg:px-10">
+            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-12 gap-6">
+                <div>
+                    <p class="text-amber-500 font-semibold tracking-widest uppercase text-sm mb-2">Discover</p>
+                    <h2 class="text-3xl md:text-5xl font-extrabold text-white">Full Menu.</h2>
+                </div>
+
+                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full lg:w-auto">
+                    <div
+                        class="flex gap-2 overflow-x-auto pb-2 sm:pb-0 w-full sm:w-auto hide-scrollbar scroll-smooth snap-x">
+                        <button onclick="setFilter('All')" id="filter-All"
+                            class="filter-btn active-filter shrink-0 px-5 py-2 rounded-full bg-amber-600 text-white text-sm font-bold shadow-lg shadow-amber-900/40 transition">All</button>
+                        <button onclick="setFilter('Street Food')" id="filter-Street Food"
+                            class="filter-btn shrink-0 px-5 py-2 rounded-full bg-white/5 hover:bg-white/10 text-stone-300 text-sm font-semibold transition border border-white/5">Street
+                            Food</button>
+                        <button onclick="setFilter('Swahili Classics')" id="filter-Swahili Classics"
+                            class="filter-btn shrink-0 px-5 py-2 rounded-full bg-white/5 hover:bg-white/10 text-stone-300 text-sm font-semibold transition border border-white/5">Swahili
+                            Classics</button>
+                        <button onclick="setFilter('Sweet Treats')" id="filter-Sweet Treats"
+                            class="filter-btn shrink-0 px-5 py-2 rounded-full bg-white/5 hover:bg-white/10 text-stone-300 text-sm font-semibold transition border border-white/5">Sweet
+                            Treats</button>
+                    </div>
+
+                    <div class="relative shrink-0 w-full sm:w-auto">
+                        <select id="sort-dropdown" onchange="applySortAndFilter()"
+                            class="w-full sm:w-auto appearance-none bg-[#3d2a1d]/80 border border-white/10 text-white text-sm font-semibold py-2 pl-4 pr-10 rounded-xl focus:outline-none focus:border-amber-500 cursor-pointer transition">
+                            <option value="likes">Sort by: Most Liked</option>
+                            <option value="price-low">Price: Low to High</option>
+                            <option value="price-high">Price: High to Low</option>
+                        </select>
+                        <div
+                            class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-amber-500">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="dynamic-menu-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
+            </div>
+        </div>
+    </main>
+    <footer class="relative w-full bg-[#1a110c] border-t border-white/5 pt-16 pb-8 z-20">
+        <div class="w-full max-w-[1400px] mx-auto px-6 lg:px-10">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12 border-b border-white/5 pb-12">
+
+                <div onclick="scrollToTop()" class="flex flex-col items-start cursor-pointer group">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div
+                            class="bg-amber-500/20 p-2 rounded-lg text-amber-500 group-hover:bg-amber-500 group-hover:text-white transition-all duration-300">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z">
+                                </path>
+                            </svg>
+                        </div>
+                        <span
+                            class="text-xl font-bold tracking-widest text-white group-hover:text-amber-400 transition-colors">MOMBASA<span
+                                class="text-amber-500">CTO.</span></span>
+                    </div>
+                    <p
+                        class="text-stone-400 text-sm leading-relaxed max-w-xs group-hover:text-stone-300 transition-colors">
+                        Empowering local Mombasa artisans by bringing quality, authentic home-cooked meals right to your
+                        door.</p>
+                </div>
+
+                <div class="flex flex-col gap-3">
+                    <h4 class="text-white font-bold tracking-wide mb-2">Explore</h4>
+                    <a href="javascript:void(0)" onclick="scrollToMenu()"
+                        class="text-stone-400 hover:text-amber-500 transition text-sm w-fit">Full Menu</a>
+                    <a href="#" class="text-stone-400 hover:text-amber-500 transition text-sm w-fit">My Orders</a>
+                    <a href="#" class="text-stone-400 hover:text-amber-500 transition text-sm w-fit">Chef
+                        Application</a>
+                </div>
+
+                <div class="flex flex-col gap-3">
+                    <h4 class="text-white font-bold tracking-wide mb-2">Support</h4>
+                    <a href="#" class="text-stone-400 hover:text-amber-500 transition text-sm w-fit">Help Center</a>
+                    <a href="#" class="text-stone-400 hover:text-amber-500 transition text-sm w-fit">Privacy Policy</a>
+                    <a href="#" class="text-stone-400 hover:text-amber-500 transition text-sm w-fit">Terms of
+                        Service</a>
+                </div>
+            </div>
+
+            <div class="flex flex-col md:flex-row items-center justify-between text-xs text-stone-500">
+                <p>&copy; 2026 Mombasa CTO. All rights reserved.</p>
+                <div class="flex items-center gap-1 mt-4 md:mt-0">
+                    Made with <svg class="w-3 h-3 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd"
+                            d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"
+                            clip-rule="evenodd"></path>
+                    </svg> in Mombasa, Kenya
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <div id="seller-modal" class="fixed inset-0 z-[200] hidden flex items-center justify-center px-6">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-md transition-opacity" onclick="closeSellerModal()">
+        </div>
+        <div class="relative bg-[#3d2a1d] border border-white/10 rounded-[2rem] p-8 w-full max-w-sm shadow-2xl transform scale-95 opacity-0 transition-all duration-300"
+            id="seller-modal-content">
+            <button onclick="closeSellerModal()"
+                class="absolute top-5 right-5 text-stone-400 hover:text-white transition bg-black/20 hover:bg-red-500/20 p-2 rounded-full border border-transparent hover:border-red-500/30">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+            <p class="text-xs font-semibold tracking-wide text-amber-500 mb-1 uppercase">About the Chef</p>
+            <h2 id="seller-chef-name" class="text-2xl font-bold text-white mb-4">Chef Ali</h2>
+            <p id="seller-bio" class="text-sm text-stone-300 leading-relaxed mb-8 border-t border-white/10 pt-4">Loading
+                bio...</p>
+            <a id="seller-phone" href="#"
+                class="w-full flex items-center justify-center bg-green-600 hover:bg-green-500 text-white py-3.5 rounded-xl text-sm font-bold transition shadow-lg shadow-green-900/50">
+                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                    <path fill-rule="evenodd"
+                        d="M12 2C6.48 2 2 6.48 2 12c0 2.17.7 4.19 1.94 5.84L3 22l4.16-.94A9.971 9.971 0 0012 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm5.54 14.17c-.26.74-1.52 1.39-2.11 1.46-.53.06-1.22.18-3.32-.69-2.53-1.05-4.14-3.64-4.26-3.81-.13-.17-1.02-1.36-1.02-2.6s.67-1.84.9-2.02c.23-.17.5-.22.67-.22.17 0 .34 0 .49.01.17.01.39-.06.61.47.23.55.77 1.88.84 2.02.07.14.12.3.02.48-.09.17-.14.28-.28.44-.13.16-.29.35-.4.49-.13.15-.27.31-.11.59.16.28.71 1.19 1.55 2.01 1.08 1.05 1.98 1.38 2.26 1.51.28.14.45.12.61-.06.17-.18.72-.84.92-1.13.19-.29.39-.24.64-.15.25.09 1.59.75 1.86.88.27.14.45.2.52.32.07.12.07.72-.19 1.46z"
+                        clip-rule="evenodd"></path>
+                </svg>
+                Contact via WhatsApp
+            </a>
+        </div>
+    </div>
+
+    <div id="order-modal" class="fixed inset-0 z-[200] hidden flex items-center justify-center px-4 sm:px-6">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-md transition-opacity" onclick="closeOrderModal()"></div>
+
+        <div class="relative bg-[#3d2a1d] border border-white/10 rounded-[2rem] p-6 md:p-8 w-full max-w-lg shadow-2xl transform scale-95 opacity-0 transition-all duration-300 max-h-[90vh] overflow-y-auto hide-scrollbar"
+            id="order-modal-content">
+
+            <button onclick="closeOrderModal()"
+                class="absolute top-5 right-5 bg-black/40 text-stone-300 hover:text-white transition hover:bg-red-500/80 p-2.5 rounded-full border border-white/10 z-10">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+
+            <div class="mb-6 border-b border-white/10 pb-6 pr-12">
+                <h2 id="order-title" class="text-2xl sm:text-3xl font-extrabold text-white leading-tight mb-2">Swahili
+                    Biriani</h2>
+                <p id="order-teaser" class="text-sm text-stone-300 leading-relaxed">Aromatic basmati rice slow-cooked
+                    with tender marinated beef...</p>
+            </div>
+
+            <div class="mb-8 bg-black/30 p-5 rounded-xl border border-white/5 flex flex-col gap-4">
+                <div class="flex items-start gap-4">
+                    <div
+                        class="w-12 h-12 rounded-full bg-amber-600 flex items-center justify-center text-white font-bold text-xl shrink-0 shadow-inner">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h4 id="order-chef" class="font-bold text-white text-base">Chef Ali</h4>
+                        <p id="order-bio" class="text-xs text-stone-300 mt-1.5 leading-relaxed">Chef bio goes here...
+                        </p>
+                    </div>
+                </div>
+
+                <a id="order-whatsapp" href="#" target="_blank"
+                    class="w-full flex items-center justify-center bg-[#25D366] hover:bg-[#1ebd57] text-white py-3 rounded-xl text-sm font-bold transition shadow-lg shadow-green-900/40 mt-1">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                        <path fill-rule="evenodd"
+                            d="M12 2C6.48 2 2 6.48 2 12c0 2.17.7 4.19 1.94 5.84L3 22l4.16-.94A9.971 9.971 0 0012 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm5.54 14.17c-.26.74-1.52 1.39-2.11 1.46-.53.06-1.22.18-3.32-.69-2.53-1.05-4.14-3.64-4.26-3.81-.13-.17-1.02-1.36-1.02-2.6s.67-1.84.9-2.02c.23-.17.5-.22.67-.22.17 0 .34 0 .49.01.17.01.39-.06.61.47.23.55.77 1.88.84 2.02.07.14.12.3.02.48-.09.17-.14.28-.28.44-.13.16-.29.35-.4.49-.13.15-.27.31-.11.59.16.28.71 1.19 1.55 2.01 1.08 1.05 1.98 1.38 2.26 1.51.28.14.45.12.61-.06.17-.18.72-.84.92-1.13.19-.29.39-.24.64-.15.25.09 1.59.75 1.86.88.27.14.45.2.52.32.07.12.07.72-.19 1.46z"
+                            clip-rule="evenodd"></path>
+                    </svg>
+                    Message Chef
+                </a>
+            </div>
+
+            <div class="flex items-center justify-between mb-6">
+                <span class="text-sm font-semibold text-stone-300">Quantity</span>
+                <div class="flex items-center bg-black/40 rounded-full border border-white/10 p-1">
+                    <button onclick="changeQty(-1)"
+                        class="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white transition"><svg
+                            class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M20 12H4"></path>
+                        </svg></button>
+                    <span id="order-qty" class="w-10 text-center font-bold text-lg text-white">1</span>
+                    <button onclick="changeQty(1)"
+                        class="w-8 h-8 rounded-full bg-amber-600 hover:bg-amber-500 flex items-center justify-center text-white transition shadow-md"><svg
+                            class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path>
+                        </svg></button>
+                </div>
+            </div>
+
+            <button onclick="addToCart()"
+                class="w-full flex items-center justify-between bg-amber-600 hover:bg-amber-500 text-white py-4 px-6 rounded-xl text-sm transition shadow-lg shadow-amber-900/40 group">
+                <span class="font-bold tracking-wide">Add to Cart</span>
+                <span id="order-total" class="bg-black/20 px-3 py-1 rounded-lg font-semibold tracking-wider">Ksh
+                    850</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="cart-drawer-bg"
+        class="fixed inset-0 z-[300] bg-black/60 backdrop-blur-sm hidden transition-opacity opacity-0 duration-300"
+        onclick="closeCart()"></div>
+
+    <div id="cart-drawer"
+        class="fixed top-0 right-0 bottom-0 z-[300] w-full sm:w-[400px] bg-[#1a110c] border-l border-white/10 shadow-2xl transform translate-x-full transition-transform duration-300 flex flex-col">
+
+        <div class="flex justify-between items-center mb-6 px-6 pt-6">
+            <h2 class="text-2xl font-extrabold text-white tracking-wide">Your Cart</h2>
+            <button onclick="closeCart()"
+                class="p-2 text-stone-400 hover:text-white bg-white/5 hover:bg-red-500/20 rounded-full transition border border-transparent hover:border-red-500/30">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto hide-scrollbar px-6 pb-12">
+            <div id="cart-items-container" class="flex flex-col gap-3 mb-6 border-b border-white/5 pb-6"></div>
+
+            <div class="p-6 bg-[#2c1e16] border-t border-white/5">
+                <div class="mb-4">
+                    <p class="text-xs text-stone-400 font-semibold uppercase tracking-wider mb-2">Delivery Date</p>
+                    <input type="date" id="delivery-date" onchange="validateDeliveryTime()"
+                        class="w-full bg-black/40 text-stone-200 text-sm px-4 py-3 rounded-xl border border-white/5 focus:outline-none focus:border-amber-500 transition-colors">
+                </div>
+
+                <div class="mb-6">
+                    <div class="flex bg-black/40 p-1 rounded-xl border border-white/5 relative">
+                        <button id="toggle-morning" onclick="setDeliveryTime('Morning')"
+                            class="flex-1 py-2 text-sm font-bold text-white bg-amber-600 rounded-lg shadow-md transition-all z-10">Morning</button>
+                        <button id="toggle-evening" onclick="setDeliveryTime('Evening')"
+                            class="flex-1 py-2 text-sm font-bold text-stone-400 hover:text-stone-200 transition-all z-10">Evening</button>
+                    </div>
+                </div>
+
+                <div class="mb-4 relative">
+                    <p class="text-xs text-stone-400 font-semibold uppercase tracking-wider mb-2">Delivery Area</p>
+
+                    <div onclick="toggleDeliveryDropdown()" id="delivery-dropdown-btn"
+                        class="w-full flex items-center justify-between bg-black/40 text-stone-400 text-sm px-4 py-3.5 rounded-xl border border-white/5 hover:border-amber-500 transition-colors cursor-pointer">
+                        <span id="delivery-selected-text">Select your area...</span>
+                        <svg class="w-4 h-4 text-stone-400" fill="none" stroke="currentColor" stroke-width="2"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </div>
+
+                    <ul id="delivery-options-list"
+                        class="hidden absolute top-full left-0 w-full mt-2 bg-[#1a110c] border border-white/10 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] overflow-hidden z-[100]">
+                        <li onclick="selectDelivery(100, 'Nyali (Ksh 100)')"
+                            class="px-4 py-3.5 text-sm text-stone-300 hover:bg-amber-600 hover:text-white cursor-pointer transition-colors border-b border-white/5">
+                            Nyali (Ksh 100)</li>
+                        <li onclick="selectDelivery(150, 'Mombasa CBD (Ksh 150)')"
+                            class="px-4 py-3.5 text-sm text-stone-300 hover:bg-amber-600 hover:text-white cursor-pointer transition-colors border-b border-white/5">
+                            Mombasa CBD (Ksh 150)</li>
+                        <li onclick="selectDelivery(200, 'Tudor (Ksh 200)')"
+                            class="px-4 py-3.5 text-sm text-stone-300 hover:bg-amber-600 hover:text-white cursor-pointer transition-colors border-b border-white/5">
+                            Tudor (Ksh 200)</li>
+                        <li onclick="selectDelivery(250, 'Bamburi (Ksh 250)')"
+                            class="px-4 py-3.5 text-sm text-stone-300 hover:bg-amber-600 hover:text-white cursor-pointer transition-colors border-b border-white/5">
+                            Bamburi (Ksh 250)</li>
+                        <li onclick="selectDelivery(300, 'Mtwapa (Ksh 300)')"
+                            class="px-4 py-3.5 text-sm text-stone-300 hover:bg-amber-600 hover:text-white cursor-pointer transition-colors">
+                            Mtwapa (Ksh 300)</li>
+                    </ul>
+
+                    <input type="hidden" id="delivery-area" value="0">
+                </div>
+
+                <div class="mb-6 relative">
+                    <p class="text-xs text-stone-400 font-semibold uppercase tracking-wider mb-2">Payment Method</p>
+
+                    <div onclick="togglePaymentDropdown()" id="payment-dropdown-btn"
+                        class="w-full flex items-center justify-between bg-black/40 text-white font-medium text-sm px-4 py-3.5 rounded-xl border border-white/5 hover:border-amber-500 transition-colors cursor-pointer">
+                        <span id="payment-selected-text">M-Pesa</span>
+                        <svg class="w-4 h-4 text-stone-400" fill="none" stroke="currentColor" stroke-width="2"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </div>
+
+                    <ul id="payment-options-list"
+                        class="hidden absolute top-full left-0 w-full mt-2 bg-[#1a110c] border border-white/10 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] overflow-hidden z-[100]">
+                        <li onclick="selectPayment('mpesa', 'M-Pesa')"
+                            class="px-4 py-3.5 text-sm text-stone-300 hover:bg-amber-600 hover:text-white cursor-pointer transition-colors border-b border-white/5">
+                            M-Pesa</li>
+                        <li onclick="selectPayment('cod', 'Cash on Delivery')"
+                            class="px-4 py-3.5 text-sm text-stone-300 hover:bg-amber-600 hover:text-white cursor-pointer transition-colors border-b border-white/5">
+                            Cash on Delivery</li>
+                        <li class="px-4 py-3.5 text-sm text-stone-600 bg-black/40 cursor-not-allowed">Credit/Debit Card
+                            (Coming Soon)</li>
+                    </ul>
+
+                    <input type="hidden" id="payment-method" value="mpesa">
+                </div>
+            </div>
+        </div>
+
+        <div class="shrink-0 bg-[#2a1d14] border-t border-white/10 pt-4 pb-6 px-6 space-y-3 mt-2">
+            <div class="flex justify-between text-sm text-stone-400">
+                <span>Subtotal</span>
+                <span id="cart-subtotal" class="font-medium text-stone-300">Ksh 0</span>
+            </div>
+            <div class="flex justify-between text-sm text-stone-400">
+                <span>Delivery Fee</span>
+                <span id="cart-delivery-fee" class="font-medium text-stone-300">Ksh 0</span>
+            </div>
+            <div class="flex justify-between text-xl font-extrabold text-white mt-2 pt-3 border-t border-white/5">
+                <span>Total</span>
+                <span id="cart-total-price" class="text-amber-500">Ksh 0</span>
+            </div>
+        </div>
+
+        <button onclick="processFirebaseOrder()"
+            class="w-full flex items-center justify-center bg-amber-600 hover:bg-amber-500 text-white py-4 rounded-xl text-sm font-bold transition shadow-lg shadow-amber-900/40 group">
+            Proceed to Checkout
+            <svg class="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor"
+                stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+            </svg>
+        </button>
+    </div>
+    </div>
+
+    <div id="nav-drawer-bg"
+        class="fixed inset-0 z-[300] bg-black/60 backdrop-blur-sm hidden transition-opacity opacity-0 duration-300 lg:hidden"
+        onclick="closeNav()"></div>
+
+    <div id="nav-drawer"
+        class="fixed top-0 left-0 bottom-0 z-[300] w-[80%] max-w-[320px] bg-[#1a110c] border-r border-white/10 shadow-2xl transform -translate-x-full transition-transform duration-300 flex flex-col lg:hidden">
+
+        <div class="flex items-center justify-between p-6 border-b border-white/5">
+            <span class="text-lg font-bold tracking-widest text-white">MOMBASA<span
+                    class="text-amber-500">CTO.</span></span>
+            <button onclick="closeNav()"
+                class="p-2 text-stone-400 hover:text-white bg-white/5 hover:bg-red-500/20 rounded-full transition border border-transparent hover:border-red-500/30">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
+            <a href="#" onclick="closeNav()"
+                class="text-lg font-semibold text-white hover:text-amber-500 transition flex items-center gap-4">
+                <svg class="w-6 h-6 text-stone-500" fill="none" stroke="currentColor" stroke-width="2"
+                    viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6">
+                    </path>
+                </svg>
+                Home
+            </a>
+            <a href="javascript:void(0)" onclick="closeNav(); scrollToMenu()"
+                class="text-lg font-semibold text-stone-300 hover:text-amber-500 transition flex items-center gap-4">
+                <svg class="w-6 h-6 text-stone-500" fill="none" stroke="currentColor" stroke-width="2"
+                    viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4">
+                    </path>
+                </svg>
+                Full Menu
+            </a>
+            <a href="#" onclick="closeNav()"
+                class="text-lg font-semibold text-stone-300 hover:text-amber-500 transition flex items-center gap-4">
+                <svg class="w-6 h-6 text-stone-500" fill="none" stroke="currentColor" stroke-width="2"
+                    viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01">
+                    </path>
+                </svg>
+                My Orders
+            </a>
+        </div>
+        <div class="p-6 border-t border-white/5 flex flex-col gap-3">
+            <button onclick="openAuth('login')"
+                class="w-full py-3 rounded-xl border border-white/10 text-stone-300 font-semibold hover:bg-white/5 transition">Log
+                In</button>
+            <button onclick="openAuth('signup')"
+                class="w-full py-3 rounded-xl bg-amber-600 text-white font-bold hover:bg-amber-500 shadow-lg shadow-amber-900/40 transition">Sign
+                Up</button>
+        </div>
+    </div>
+    <div id="auth-modal" class="fixed inset-0 z-[400] hidden flex items-center justify-center px-6">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-md transition-opacity" onclick="closeAuth()"></div>
+
+        <div class="relative bg-[#3d2a1d] border border-white/10 rounded-[2rem] p-8 w-full max-w-md shadow-2xl transform scale-95 opacity-0 transition-all duration-300"
+            id="auth-modal-content">
+
+            <button onclick="closeAuth()"
+                class="absolute top-4 right-4 text-stone-400 hover:text-white transition bg-black/20 hover:bg-red-500/20 p-2 rounded-full border border-transparent hover:border-red-500/30 z-10">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+
+            <div class="flex bg-black/40 p-1 rounded-xl border border-white/5 relative mt-6 mb-8">
+                <button id="tab-login" onclick="switchAuthMode('login')"
+                    class="flex-1 py-2.5 text-sm font-bold text-white bg-amber-600 rounded-lg shadow-md transition-all z-10">Log
+                    In</button>
+                <button id="tab-signup" onclick="switchAuthMode('signup')"
+                    class="flex-1 py-2.5 text-sm font-bold text-stone-400 hover:text-stone-200 transition-all z-10">Sign
+                    Up</button>
+            </div>
+
+            <form class="flex flex-col gap-5"
+                onsubmit="event.preventDefault(); alert('Firebase Auth Hook goes here!'); closeAuth();">
+
+                <div id="name-field" class="hidden">
+                    <label class="text-[11px] text-stone-400 font-semibold uppercase tracking-wider mb-1.5 block">Full
+                        Name</label>
+                    <input type="text" placeholder="John Doe"
+                        class="w-full bg-black/40 text-stone-200 text-sm px-4 py-3.5 rounded-xl border border-white/5 focus:outline-none focus:border-amber-500 transition-colors">
+                </div>
+
+                <div>
+                    <label class="text-[11px] text-stone-400 font-semibold uppercase tracking-wider mb-1.5 block">Email
+                        Address</label>
+                    <input type="email" placeholder="you@example.com" required
+                        class="w-full bg-black/40 text-stone-200 text-sm px-4 py-3.5 rounded-xl border border-white/5 focus:outline-none focus:border-amber-500 transition-colors">
+                </div>
+
+                <div>
+                    <label
+                        class="text-[11px] text-stone-400 font-semibold uppercase tracking-wider mb-1.5 flex justify-between">
+                        Password
+                        <a href="#" class="text-amber-500 hover:text-amber-400 normal-case tracking-normal">Forgot?</a>
+                    </label>
+                    <div class="relative">
+                        <input type="password" id="auth-password" placeholder="••••••••" required
+                            class="w-full bg-black/40 text-stone-200 text-sm px-4 py-3.5 rounded-xl border border-white/5 focus:outline-none focus:border-amber-500 transition-colors pr-12">
+                        <button type="button" onclick="togglePassword()"
+                            class="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-200 focus:outline-none transition-colors z-10 p-2 cursor-pointer">
+                            <svg id="eye-open" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-.174.553-.386 1.09-.628 1.606m-2.455 2.853A10.014 10.014 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.96 9.96 0 012.05-3.32">
+                                </path>
+                            </svg>
+                            <svg id="eye-closed" class="w-5 h-5 hidden" fill="none" stroke="currentColor"
+                                stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21">
+                                </path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" id="auth-submit-btn"
+                    class="w-full mt-2 flex items-center justify-center bg-amber-600 hover:bg-amber-500 text-white py-4 rounded-xl text-sm font-bold transition shadow-lg shadow-amber-900/40">
+                    Log In
+                </button>
+            </form>
+
+            <div class="mt-8 pt-6 border-t border-white/10">
+                <button onclick="alert('Firebase Google Provider Hook Here!')"
+                    class="w-full flex items-center justify-center bg-white hover:bg-stone-200 text-black py-3.5 rounded-xl text-sm font-bold transition shadow-lg">
+                    <svg class="w-5 h-5 mr-3" viewBox="0 0 24 24">
+                        <path
+                            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                            fill="#4285F4" />
+                        <path
+                            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                            fill="#34A853" />
+                        <path
+                            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                            fill="#FBBC05" />
+                        <path
+                            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                            fill="#EA4335" />
+                    </svg>
+                    Continue with Google
+                </button>
+            </div>
+
+        </div>
+    </div>
+    <script>
+        let currentIndex = 0;
+        let isAnimating = false;
+        let autoPlayTimer;
+
+        // ==========================================
+        // UPGRADED: SMART TIME-TRAVEL PREVENTION ENGINE
+        // ==========================================
+        window.onload = () => {
+            initDateLogic();
+            applySortAndFilter(); // <--- ADD THIS LINE
+        };
+
+        function initDateLogic() {
+            const dateInput = document.getElementById('delivery-date');
+            const now = new Date();
+            const currentHour = now.getHours();
+            let minDate = new Date(now);
+
+            if (currentHour >= 10) {
+                minDate.setDate(now.getDate() + 1);
+            }
+
+            // FIX: Manually format local timezone string to avoid UTC shift!
+            const year = minDate.getFullYear();
+            const month = String(minDate.getMonth() + 1).padStart(2, '0');
+            const day = String(minDate.getDate()).padStart(2, '0');
+            const localMinDateString = `${year}-${month}-${day}`;
+
+            dateInput.min = localMinDateString;
+            dateInput.value = localMinDateString;
+
+            validateDeliveryTime();
+        }
+
+        function validateDeliveryTime() {
+            const dateInput = document.getElementById('delivery-date').value;
+            if (!dateInput) return;
+
+            const selectedDate = new Date(dateInput);
+            const now = new Date();
+            const currentHour = now.getHours();
+
+            // Normalize times to midnight for easy Day 1 vs Day 2 comparison
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+            const chosenDay = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate()).getTime();
+
+            const btnMorning = document.getElementById('toggle-morning');
+
+            // Reset buttons (enable Morning by default)
+            btnMorning.disabled = false;
+            btnMorning.classList.remove('opacity-50', 'cursor-not-allowed');
+
+            // Rule 2: Disable Morning Delivery if:
+            // A) They pick Today (Morning delivery requires ordering yesterday)
+            // B) They pick Tomorrow, but it's already past 7:00 PM (19:00) today.
+            const isTomorrow = (chosenDay - today === 86400000);
+            const isToday = (chosenDay === today);
+
+            if (isToday || (isTomorrow && currentHour >= 19)) {
+                btnMorning.disabled = true;
+                btnMorning.classList.add('opacity-50', 'cursor-not-allowed');
+
+                // Auto-switch to Evening so they aren't stuck on a dead option
+                if (deliveryPreference === 'Morning') {
+                    setDeliveryTime('Evening');
+                }
+            }
+        }
+
+        // ==========================================
+        // NEW: PASSWORD TOGGLE LOGIC
+        // ==========================================
+        function togglePassword() {
+            const passInput = document.getElementById('auth-password');
+            const eyeOpen = document.getElementById('eye-open');
+            const eyeClosed = document.getElementById('eye-closed');
+
+            if (passInput.type === 'password') {
+                passInput.type = 'text';
+                eyeOpen.classList.add('hidden');
+                eyeClosed.classList.remove('hidden');
+            } else {
+                passInput.type = 'password';
+                eyeOpen.classList.remove('hidden');
+                eyeClosed.classList.add('hidden');
+            }
+        }
+
+        // Splash Screen
+        setTimeout(function () {
+            const splashScreen = document.getElementById('intro-splash');
+            splashScreen.classList.add('fade-out-splash');
+            setTimeout(() => {
+                splashScreen.remove();
+                startAutoPlay();
+            }, 1000);
+        }, 4500);
+
+        function startAutoPlay() {
+            autoPlayTimer = setInterval(() => {
+                let nextIndex = (currentIndex + 1) % topDishes.length;
+                swapDish(nextIndex, false);
+            }, 5000);
+        }
+
+        // Database
+        const topDishes = [
+            {
+                tag: "#1 Most loved dish", topTitle: "SWAHILI", bottomTitle: "BIRIANI", chef: "Chef Ali", likes: 342, isLiked: false, category: "Swahili Classics",
+                teaser: "Aromatic basmati rice slow-cooked with tender marinated beef, rich coastal spices, and thick yogurt gravy.",
+                image: "https://images.unsplash.com/photo-1631515243349-e0cb75fb8d3a?q=80&w=600&auto=format&fit=crop",
+                bio: "Chef Ali learned the art of perfect Biriani from his grandmother. He specializes in slow-cooked, deeply spiced traditional Swahili meals made entirely from scratch.",
+                phone: "+254700000001", rawPrice: 850
+            },
+            {
+                tag: "#2 Most loved dish", topTitle: "CRISPY", bottomTitle: "VIAZI KARAI", chef: "Chef Amina", likes: 289, isLiked: false, category: "Street Food",
+                teaser: "Golden, crispy fried potatoes coated in a vibrant turmeric and tamarind batter. The ultimate street delicacy.",
+                image: "https://images.unsplash.com/photo-1541529086526-db283c563270?q=80&w=600&auto=format&fit=crop",
+                bio: "Famous for her secret tamarind dip, Chef Amina has been perfecting Mombasa street food for over a decade. Her Viazi Karai is always fried fresh to order.",
+                phone: "+254700000002", rawPrice: 250
+            },
+            {
+                tag: "#3 Most loved dish", topTitle: "COASTAL", bottomTitle: "MABUYU", chef: "Mama Fatma", likes: 215, isLiked: false, category: "Sweet Treats",
+                teaser: "Sweet, tangy baobab seeds coated in a rich, spiced red syrup. A nostalgic Mombasa classic.",
+                image: "https://images.unsplash.com/photo-1515003197210-e0cd71810b5f?q=80&w=600&auto=format&fit=crop",
+                bio: "Mama Fatma’s Mabuyu is legendary. She sources the freshest baobab seeds and coats them in a perfectly balanced sweet and spicy syrup that keeps locals coming back.",
+                phone: "+254700000003", rawPrice: 150
+            },
+            {
+                tag: "#4 Most loved dish", topTitle: "ARTISANAL", bottomTitle: "SPICED CAKE", chef: "Chef Swalah", likes: 142, isLiked: false, category: "Sweet Treats",
+                teaser: "Slow-baked with coastal cardamom, fermented for that perfect balance. Finished with a light honey glaze.",
+                image: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?q=80&w=600&auto=format&fit=crop",
+                bio: "Chef Swalah brings a modern twist to traditional coastal baking. He infuses high-quality ingredients with local spices like cardamom and cinnamon for unforgettable pastries.",
+                phone: "+254700000004", rawPrice: 1500
+            }
+        ];
+
+        function nextDish() { let nextIndex = (currentIndex + 1) % topDishes.length; swapDish(nextIndex, true); }
+        function prevDish() { let prevIndex = (currentIndex - 1 + topDishes.length) % topDishes.length; swapDish(prevIndex, true); }
+
+        function swapDish(index, isManualClick) {
+            if (isAnimating || index === currentIndex) return;
+            if (isManualClick) clearInterval(autoPlayTimer);
+            isAnimating = true; currentIndex = index; const dish = topDishes[index];
+            const mainImg = document.getElementById('main-image'); const centerText = document.getElementById('center-text'); const rightCard = document.getElementById('right-card');
+            const isMobile = window.innerWidth < 1024; const moveDistance = isMobile ? "100px" : "200px";
+
+            mainImg.style.transform = `translateX(-${moveDistance}) scale(0.6) rotate(-20deg)`; mainImg.style.opacity = "0";
+            centerText.style.transform = "translateY(20px)"; centerText.style.opacity = "0";
+            rightCard.style.transform = "translateY(20px)"; rightCard.style.opacity = "0";
+
+            for (let i = 0; i < 4; i++) {
+                const thumb = document.getElementById('thumb-' + i); const img = thumb.querySelector('img'); const text = thumb.querySelector('span');
+                if (i === index) {
+                    thumb.className = "w-24 flex flex-col items-center cursor-pointer transition duration-300 transform scale-110 -translate-y-2";
+                    img.className = "w-16 h-16 rounded-full object-cover mb-2 shadow-[0_0_20px_rgba(245,158,11,0.6)]";
+                    text.className = "text-xs font-bold text-center leading-tight text-amber-500 drop-shadow-md";
+                } else {
+                    thumb.className = "w-24 flex flex-col items-center cursor-pointer opacity-50 hover:opacity-100 transition duration-300 transform hover:-translate-y-1";
+                    img.className = "w-16 h-16 rounded-full object-cover shadow-md shadow-black/50 mb-2";
+                    text.className = "text-xs font-medium text-center leading-tight text-stone-400";
+                }
+            }
+            setTimeout(() => {
+                mainImg.style.transition = "none"; mainImg.style.transform = `translateX(${moveDistance}) scale(0.6) rotate(20deg)`; mainImg.src = dish.image;
+                void mainImg.offsetWidth; mainImg.style.transition = "all 0.7s cubic-bezier(0.25, 1, 0.5, 1)"; mainImg.style.transform = "translateX(0) scale(1) rotate(0deg)"; mainImg.style.opacity = "1";
+            }, 400);
+            setTimeout(() => {
+                document.getElementById('tagline').innerText = dish.tag;
+                document.getElementById('title-top').innerText = dish.topTitle;
+                document.getElementById('title-bottom').innerText = dish.bottomTitle;
+                document.getElementById('chef-name').innerText = dish.chef;
+                document.getElementById('teaser-text').innerText = dish.teaser;
+
+                // NEW: Update the Hero Price Tag!
+                document.getElementById('hero-price').innerText = `Ksh ${dish.rawPrice}`;
+
+                updateHeroLikeBtn();
+                centerText.style.transform = "translateY(0)";
+                centerText.style.opacity = "1";
+                rightCard.style.transform = "translateY(0)";
+                rightCard.style.opacity = "1";
+                isAnimating = false;
+            }, 800);
+        }
+
+        // Global Likes
+        function toggleHeroLike() { const dish = topDishes[currentIndex]; dish.isLiked = !dish.isLiked; dish.likes += dish.isLiked ? 1 : -1; updateHeroLikeBtn(); updateGridLikeBtn(currentIndex); }
+        function toggleGridLike(index, event) { event.stopPropagation(); const dish = topDishes[index]; dish.isLiked = !dish.isLiked; dish.likes += dish.isLiked ? 1 : -1; updateGridLikeBtn(index); if (index === currentIndex) updateHeroLikeBtn(); }
+        function updateHeroLikeBtn() {
+            const dish = topDishes[currentIndex]; const count = document.getElementById('likes-count'); const icon = document.getElementById('hero-like-icon');
+            count.innerText = dish.likes + " LIKES";
+            if (dish.isLiked) { icon.classList.add('text-red-500'); icon.classList.remove('text-stone-400'); } else { icon.classList.remove('text-red-500'); icon.classList.add('text-stone-400'); }
+        }
+        function updateGridLikeBtn(index) {
+            const dish = topDishes[index]; const count = document.getElementById('grid-like-count-' + index); const icon = document.getElementById('grid-like-icon-' + index);
+            if (!count || !icon) return; count.innerText = dish.likes + " LIKES";
+            if (dish.isLiked) { icon.classList.add('text-red-500'); icon.classList.remove('text-white'); } else { icon.classList.remove('text-red-500'); icon.classList.add('text-white'); }
+        }
+
+        // Seller Modal
+        function openSellerModal() {
+            document.getElementById('seller-chef-name').innerText = topDishes[currentIndex].chef; document.getElementById('seller-bio').innerText = topDishes[currentIndex].bio; document.getElementById('seller-phone').href = "tel:" + topDishes[currentIndex].phone;
+            document.getElementById('seller-modal').classList.remove('hidden');
+            setTimeout(() => { document.getElementById('seller-modal-content').classList.remove('scale-95', 'opacity-0'); document.getElementById('seller-modal-content').classList.add('scale-100', 'opacity-100'); }, 10);
+        }
+        function closeSellerModal() {
+            document.getElementById('seller-modal-content').classList.remove('scale-100', 'opacity-100'); document.getElementById('seller-modal-content').classList.add('scale-95', 'opacity-0');
+            setTimeout(() => { document.getElementById('seller-modal').classList.add('hidden'); }, 300);
+        }
+
+        // Cart Management System
+        let cart = [];
+        let deliveryPreference = "Morning";
+        let currentOrderIndex = 0; let currentQty = 1;
+
+        function openOrderModal(index) {
+            currentOrderIndex = index;
+            currentQty = 1;
+            const dish = topDishes[index];
+
+            document.getElementById('order-title').innerText = dish.topTitle + (dish.bottomTitle ? " " + dish.bottomTitle : "");
+            document.getElementById('order-teaser').innerText = dish.teaser;
+            document.getElementById('order-chef').innerText = dish.chef;
+            document.getElementById('order-bio').innerText = dish.bio;
+
+            // Format phone number for WhatsApp API (remove the + symbol)
+            const waNumber = dish.phone.replace('+', '');
+            const waMessage = encodeURIComponent(`Hi ${dish.chef}, I am interested in your ${dish.topTitle} ${dish.bottomTitle} from Mombasa CTO!`);
+            document.getElementById('order-whatsapp').href = `https://wa.me/${waNumber}?text=${waMessage}`;
+
+            document.getElementById('order-qty').innerText = currentQty;
+
+            updateOrderTotal();
+
+            document.getElementById('order-modal').classList.remove('hidden');
+            setTimeout(() => {
+                document.getElementById('order-modal-content').classList.remove('scale-95', 'opacity-0');
+                document.getElementById('order-modal-content').classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+        function closeOrderModal() {
+            document.getElementById('order-modal-content').classList.remove('scale-100', 'opacity-100'); document.getElementById('order-modal-content').classList.add('scale-95', 'opacity-0');
+            setTimeout(() => { document.getElementById('order-modal').classList.add('hidden'); }, 300);
+        }
+        function changeQty(amount) {
+            currentQty += amount; if (currentQty < 1) currentQty = 1;
+            document.getElementById('order-qty').innerText = currentQty; updateOrderTotal();
+        }
+        function updateOrderTotal() {
+            document.getElementById('order-total').innerText = "Ksh " + (topDishes[currentOrderIndex].rawPrice * currentQty).toLocaleString();
+        }
+
+        function addToCart() {
+            const dish = topDishes[currentOrderIndex];
+            let existingItem = cart.find(item => item.id === currentOrderIndex);
+            if (existingItem) existingItem.qty += currentQty;
+            else cart.push({ id: currentOrderIndex, title: dish.topTitle + (dish.bottomTitle ? " " + dish.bottomTitle : ""), chef: dish.chef, price: dish.rawPrice, qty: currentQty, image: dish.image });
+
+            updateCartBadge(); closeOrderModal(); renderCart();
+        }
+
+        function updateCartBadge() {
+            let totalItems = 0; cart.forEach(item => totalItems += item.qty);
+            document.querySelectorAll('.cart-badge').forEach(badge => {
+                badge.innerText = totalItems; badge.classList.add('scale-150');
+                setTimeout(() => badge.classList.remove('scale-150'), 300);
+            });
+        }
+
+        function openCart() {
+            // NEW: Lock the background scrolling
+            document.body.classList.add('overflow-hidden');
+
+            const bg = document.getElementById('cart-drawer-bg');
+            bg.classList.remove('hidden');
+            setTimeout(() => {
+                bg.classList.remove('opacity-0');
+                bg.classList.add('opacity-100');
+                document.getElementById('cart-drawer').classList.remove('translate-x-full');
+            }, 10);
+            renderCart();
+        }
+
+        function closeCart() {
+            // NEW: Unlock the background scrolling
+            document.body.classList.remove('overflow-hidden');
+
+            const bg = document.getElementById('cart-drawer-bg');
+            document.getElementById('cart-drawer').classList.add('translate-x-full');
+            bg.classList.remove('opacity-100');
+            bg.classList.add('opacity-0');
+
+            setTimeout(() => {
+                bg.classList.add('hidden');
+            }, 300);
+        }
+
+        function updateCartQty(id, amount) {
+            let item = cart.find(i => i.id === id);
+            if (item) {
+                item.qty += amount;
+                if (item.qty < 1) item.qty = 1;
+                updateCartBadge();
+                renderCart();
+            }
+        }
+
+        function removeItem(id) {
+            cart = cart.filter(item => item.id !== id);
+            updateCartBadge(); renderCart();
+        }
+
+        function renderCart() {
+            const container = document.getElementById('cart-items-container'); const totalElement = document.getElementById('cart-grand-total');
+            container.innerHTML = '';
+
+            if (cart.length === 0) {
+                container.innerHTML = `
+                    <div class="h-full flex flex-col items-center justify-center text-stone-500 opacity-50">
+                        <svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                        <p class="font-medium">Your cart is empty.</p>
+                    </div>`;
+                totalElement.innerText = "Ksh 0"; return;
+            }
+
+            let grandTotal = 0;
+            cart.forEach(item => {
+                const itemTotal = item.price * item.qty; grandTotal += itemTotal;
+                container.innerHTML += `
+                    <div class="flex items-center gap-3 bg-white/5 p-3 rounded-2xl border border-white/5">
+                        <img src="${item.image}" class="w-14 h-14 rounded-full object-cover shadow-md" alt="${item.title}">
+                        <div class="flex-1">
+                            <h4 class="text-sm font-bold text-white line-clamp-1">${item.title}</h4>
+                            <p class="text-[10px] text-amber-500 font-semibold mb-1.5">${item.chef}</p>
+                            <span class="text-sm font-bold text-white block">Ksh ${itemTotal.toLocaleString()}</span>
+                        </div>
+                        
+                        <div class="flex flex-col items-center gap-1 bg-black/40 rounded-lg p-1 border border-white/5">
+                            <button onclick="updateCartQty(${item.id}, 1)" class="w-6 h-6 rounded-md bg-white/5 hover:bg-white/10 flex items-center justify-center text-white transition"><svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg></button>
+                            <span class="text-xs font-bold text-white">${item.qty}</span>
+                            <button onclick="updateCartQty(${item.id}, -1)" class="w-6 h-6 rounded-md bg-white/5 hover:bg-white/10 flex items-center justify-center text-white transition"><svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 12H4"></path></svg></button>
+                        </div>
+
+                        <button onclick="removeItem(${item.id})" class="p-2 ml-1 text-stone-500 hover:text-red-500 transition bg-black/20 rounded-full hover:bg-red-500/10">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </div>
+                `;
+            });
+            // NEW: Hand the math over to our smart engine!
+            updateCartTotal();
+        }
+
+        function updateCartTotal() {
+            let subtotal = 0;
+            cart.forEach(item => {
+                subtotal += item.price * item.qty;
+            });
+
+            // Get the Delivery Fee from the dropdown
+            const deliveryDropdown = document.getElementById('delivery-area');
+            let deliveryFee = 0;
+
+            // Only add the fee if they have actually selected a valid area
+            if (deliveryDropdown && deliveryDropdown.value !== "0") {
+                deliveryFee = parseInt(deliveryDropdown.value);
+            }
+
+            const total = subtotal + deliveryFee;
+
+            // Update the UI
+            document.getElementById('cart-subtotal').innerText = `Ksh ${subtotal}`;
+            document.getElementById('cart-delivery-fee').innerText = `Ksh ${deliveryFee}`;
+            document.getElementById('cart-total-price').innerText = `Ksh ${total}`;
+
+            // Update the floating cart badge in the Nav bar
+            let totalItems = 0;
+            cart.forEach(item => totalItems += item.qty);
+            document.querySelector('.cart-badge').innerText = totalItems;
+        }
+
+        function setDeliveryTime(time) {
+            deliveryPreference = time;
+            const btnMorning = document.getElementById('toggle-morning'); const btnEvening = document.getElementById('toggle-evening');
+            if (time === 'Morning') {
+                btnMorning.className = "flex-1 py-2 text-sm font-bold text-white bg-amber-600 rounded-lg shadow-md transition-all z-10"; btnEvening.className = "flex-1 py-2 text-sm font-bold text-stone-400 hover:text-stone-200 transition-all z-10";
+            } else {
+                btnEvening.className = "flex-1 py-2 text-sm font-bold text-white bg-amber-600 rounded-lg shadow-md transition-all z-10"; btnMorning.className = "flex-1 py-2 text-sm font-bold text-stone-400 hover:text-stone-200 transition-all z-10";
+            }
+        }
+
+        function processFirebaseOrder() {
+            if (cart.length === 0) {
+                alert("Please add items to your cart first!");
+                return;
+            }
+            const deliveryDate = document.getElementById('delivery-date').value;
+            if (!deliveryDate) {
+                alert("Please select a valid delivery date.");
+                return;
+            }
+            const firebasePayload = {
+                orderItems: cart,
+                deliveryDate: deliveryDate,
+                deliveryTime: deliveryPreference,
+                orderStatus: "Pending",
+                timestamp: new Date().toISOString()
+            };
+            console.log("READY TO SEND TO FIREBASE:", firebasePayload);
+            alert(`Awesome! Your order is ready to be routed to Firebase.\n\nDelivery scheduled for: ${deliveryDate} (${deliveryPreference})`);
+            cart = [];
+            updateCartBadge();
+            closeCart();
+        }
+
+        // ==========================================
+        // NEW: MOBILE NAV DRAWER LOGIC
+        // ==========================================
+        function openNav() {
+            const bg = document.getElementById('nav-drawer-bg');
+            const drawer = document.getElementById('nav-drawer');
+
+            bg.classList.remove('hidden');
+            setTimeout(() => {
+                bg.classList.remove('opacity-0');
+                bg.classList.add('opacity-100');
+                drawer.classList.remove('-translate-x-full');
+                drawer.classList.add('translate-x-0');
+            }, 10);
+        }
+
+        function closeNav() {
+            const bg = document.getElementById('nav-drawer-bg');
+            const drawer = document.getElementById('nav-drawer');
+
+            drawer.classList.remove('translate-x-0');
+            drawer.classList.add('-translate-x-full');
+            bg.classList.remove('opacity-100');
+            bg.classList.add('opacity-0');
+
+            setTimeout(() => { bg.classList.add('hidden'); }, 300);
+        }
+        // ==========================================
+        // NEW: AUTHENTICATION LOGIC
+        // ==========================================
+        function openAuth(mode) {
+            switchAuthMode(mode);
+
+            // Close mobile nav if it's open
+            const navBg = document.getElementById('nav-drawer-bg');
+            if (!navBg.classList.contains('hidden')) {
+                closeNav();
+            }
+
+            const modal = document.getElementById('auth-modal');
+            const content = document.getElementById('auth-modal-content');
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeAuth() {
+            const modal = document.getElementById('auth-modal');
+            const content = document.getElementById('auth-modal-content');
+
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => { modal.classList.add('hidden'); }, 300);
+        }
+
+        function switchAuthMode(mode) {
+            const btnLogin = document.getElementById('tab-login');
+            const btnSignup = document.getElementById('tab-signup');
+            const nameField = document.getElementById('name-field');
+            const submitBtn = document.getElementById('auth-submit-btn');
+
+            if (mode === 'login') {
+                btnLogin.className = "flex-1 py-2.5 text-sm font-bold text-white bg-amber-600 rounded-lg shadow-md transition-all z-10";
+                btnSignup.className = "flex-1 py-2.5 text-sm font-bold text-stone-400 hover:text-stone-200 transition-all z-10";
+                nameField.classList.add('hidden');
+                submitBtn.innerText = "Log In";
+            } else {
+                btnSignup.className = "flex-1 py-2.5 text-sm font-bold text-white bg-amber-600 rounded-lg shadow-md transition-all z-10";
+                btnLogin.className = "flex-1 py-2.5 text-sm font-bold text-stone-400 hover:text-stone-200 transition-all z-10";
+                nameField.classList.remove('hidden');
+                submitBtn.innerText = "Create Account";
+            }
+        }
+        // ==========================================
+        // NEW: MENU FILTERING, SORTING & RENDERING
+        // ==========================================
+        let currentFilter = 'All';
+
+        function scrollToMenu() {
+            document.getElementById('menu-section').scrollIntoView({ behavior: 'smooth' });
+        }
+        // NEW: Scroll back to the top of the page
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function setFilter(category) {
+            currentFilter = category;
+
+            // Update button styles visually
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.className = "filter-btn shrink-0 px-5 py-2 rounded-full bg-white/5 hover:bg-white/10 text-stone-300 text-sm font-semibold transition border border-white/5";
+            });
+            document.getElementById('filter-' + category).className = "filter-btn active-filter shrink-0 px-5 py-2 rounded-full bg-amber-600 text-white text-sm font-bold shadow-lg shadow-amber-900/40 transition";
+
+            applySortAndFilter();
+        }
+
+        function applySortAndFilter() {
+            const sortMethod = document.getElementById('sort-dropdown').value;
+            let displayDishes = [...topDishes];
+
+            // 1. Apply Filter
+            if (currentFilter !== 'All') {
+                displayDishes = displayDishes.filter(dish => dish.category === currentFilter);
+            }
+
+            // 2. Apply Sort
+            if (sortMethod === 'likes') {
+                displayDishes.sort((a, b) => b.likes - a.likes);
+            } else if (sortMethod === 'price-low') {
+                displayDishes.sort((a, b) => a.rawPrice - b.rawPrice);
+            } else if (sortMethod === 'price-high') {
+                displayDishes.sort((a, b) => b.rawPrice - a.rawPrice);
+            }
+
+            renderMenuGrid(displayDishes);
+        }
+
+        function renderMenuGrid(dishesToRender) {
+            const grid = document.getElementById('dynamic-menu-grid');
+            grid.innerHTML = '';
+
+            if (dishesToRender.length === 0) {
+                grid.innerHTML = `<p class="text-stone-400 col-span-full text-center py-12">No dishes found in this category.</p>`;
+                return;
+            }
+
+            dishesToRender.forEach(dish => {
+                const originalIndex = topDishes.indexOf(dish);
+                const heartClass = dish.isLiked ? "text-red-500" : "text-white";
+
+                grid.innerHTML += `
+                <div onclick="openOrderModal(${originalIndex})" class="flex flex-col h-full bg-[#3d2a1d]/40 border border-white/5 rounded-3xl p-4 hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(0,0,0,0.5)] hover:bg-[#3d2a1d]/60 transition-all duration-300 group cursor-pointer animate-title">
+                    <div class="relative overflow-hidden rounded-2xl mb-4">
+                        <img src="${dish.image}" class="w-full h-48 object-cover group-hover:scale-110 transition duration-500" alt="Food">
+                        <div class="absolute top-3 left-3 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-xl text-white font-bold text-[10px] tracking-wider border border-white/10 shadow-lg">
+                            Ksh ${dish.rawPrice}
+                        </div>
+                        
+                        <button onclick="toggleGridLike(${originalIndex}, event)" class="absolute top-3 right-3 bg-black/60 backdrop-blur-md px-2.5 py-1.5 rounded-xl flex items-center shadow-lg border border-white/10 hover:bg-black/80 transition-colors group/btn z-10">
+                            <svg id="grid-like-icon-${originalIndex}" class="w-3.5 h-3.5 ${heartClass} group-hover/btn:scale-110 group-hover/btn:text-red-500 transition-all duration-300 mr-1.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"></path></svg>
+                            <span id="grid-like-count-${originalIndex}" class="text-[10px] font-bold text-white tracking-wide">${dish.likes} LIKES</span>
+                        </button>
+                    </div>
+                    <div class="mb-4 flex-1">
+                        <h3 class="text-lg font-bold text-white mb-1 group-hover:text-amber-400 transition">${dish.topTitle} ${dish.bottomTitle}</h3>
+                        <p class="text-xs text-stone-400 font-medium">${dish.chef}</p>
+                    </div>
+                    
+                    <div class="w-full py-2.5 bg-white/5 group-hover:bg-amber-600 border border-white/5 rounded-xl text-sm font-semibold text-stone-200 transition flex items-center justify-center group-hover:border-transparent mt-auto">
+                        View Details & Add
+                    </div>
+                </div>`;
+            });
+        }
+        // ==========================================
+        // NEW: CUSTOM DROPDOWN LOGIC
+        // ==========================================
+        function toggleDeliveryDropdown() {
+            const list = document.getElementById('delivery-options-list');
+            list.classList.toggle('hidden');
+        }
+
+        function selectDelivery(fee, text) {
+            // 1. Update the visible text and make it bright white
+            const textElement = document.getElementById('delivery-selected-text');
+            textElement.innerText = text;
+            textElement.classList.remove('text-stone-400');
+            textElement.classList.add('text-white', 'font-medium');
+
+            // 2. Update the hidden input value so math works
+            document.getElementById('delivery-area').value = fee;
+
+            // 3. Close the dropdown list
+            document.getElementById('delivery-options-list').classList.add('hidden');
+
+            // 4. Trigger the math recalculation!
+            updateCartTotal();
+        }
+
+        // ==========================================
+        // CUSTOM PAYMENT DROPDOWN LOGIC
+        // ==========================================
+        function togglePaymentDropdown() {
+            const list = document.getElementById('payment-options-list');
+            list.classList.toggle('hidden');
+        }
+
+        function selectPayment(value, text) {
+            document.getElementById('payment-selected-text').innerText = text;
+            document.getElementById('payment-method').value = value;
+            document.getElementById('payment-options-list').classList.add('hidden');
+        }
+
+        // UPGRADED: Close dropdowns if user clicks anywhere else
+        document.addEventListener('click', function (event) {
+            const deliveryBtn = document.getElementById('delivery-dropdown-btn');
+            const deliveryList = document.getElementById('delivery-options-list');
+            if (deliveryBtn && !deliveryBtn.contains(event.target) && !deliveryList.contains(event.target)) {
+                deliveryList.classList.add('hidden');
+            }
+
+            const paymentBtn = document.getElementById('payment-dropdown-btn');
+            const paymentList = document.getElementById('payment-options-list');
+            if (paymentBtn && !paymentBtn.contains(event.target) && !paymentList.contains(event.target)) {
+                paymentList.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+
+</html>
