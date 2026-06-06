@@ -799,6 +799,18 @@
         </div>
     </div>
     <script>
+        // ==========================================
+        // UNIVERSAL MOBILE SCROLL LOCK
+        // ==========================================
+        function lockScroll() {
+            document.documentElement.classList.add('overflow-hidden', 'overscroll-none');
+            document.body.classList.add('overflow-hidden', 'overscroll-none');
+        }
+
+        function unlockScroll() {
+            document.documentElement.classList.remove('overflow-hidden', 'overscroll-none');
+            document.body.classList.remove('overflow-hidden', 'overscroll-none');
+        }
         let currentIndex = 0;
         let isAnimating = false;
         let autoPlayTimer;
@@ -1071,7 +1083,7 @@
 
         function openCart() {
             // NEW: Lock the background scrolling
-            document.body.classList.add('overflow-hidden');
+            lockScroll();
 
             const bg = document.getElementById('cart-drawer-bg');
             bg.classList.remove('hidden');
@@ -1085,7 +1097,7 @@
 
         function closeCart() {
             // NEW: Unlock the background scrolling
-            document.body.classList.remove('overflow-hidden');
+            unlockScroll();
 
             const bg = document.getElementById('cart-drawer-bg');
             document.getElementById('cart-drawer').classList.add('translate-x-full');
@@ -1220,7 +1232,7 @@
         // ==========================================
         function openNav() {
             // NEW: Lock the background when nav opens
-            document.body.classList.add('overflow-hidden'); 
+            lockScroll();
 
             const bg = document.getElementById('nav-drawer-bg');
             const drawer = document.getElementById('nav-drawer');
@@ -1236,7 +1248,7 @@
 
         function closeNav() {
             // NEW: Unlock the background when nav closes
-            document.body.classList.remove('overflow-hidden'); 
+            unlockScroll();
 
             const bg = document.getElementById('nav-drawer-bg');
             const drawer = document.getElementById('nav-drawer');
@@ -1262,7 +1274,7 @@
             }
 
             // NEW: Lock the background for the Auth Modal
-            document.body.classList.add('overflow-hidden'); 
+            lockScroll();
 
             const modal = document.getElementById('auth-modal');
             const content = document.getElementById('auth-modal-content');
@@ -1276,7 +1288,7 @@
 
         function closeAuth() {
             // NEW: Unlock the background when Auth Modal closes
-            document.body.classList.remove('overflow-hidden'); 
+            unlockScroll();
 
             const modal = document.getElementById('auth-modal');
             const content = document.getElementById('auth-modal-content');
