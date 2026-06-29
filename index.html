@@ -357,7 +357,7 @@
                 </div>
             </div>
 
-            <div id="dynamic-menu-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
+            <div id="dynamic-menu-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 min-h-[70vh] content-start">
             </div>
         </div>
     </main>
@@ -1360,6 +1360,16 @@
             }
 
             renderMenuGrid(displayDishes);
+
+            // NEW: Anchor the screen to prevent mobile jumping
+            setTimeout(() => {
+                const grid = document.getElementById('dynamic-menu-grid');
+                if (grid) { // Safety check to make sure the grid exists
+                    const yOffset = -180; 
+                    const y = grid.getBoundingClientRect().top + window.pageYOffset + yOffset;
+                    window.scrollTo({ top: y, behavior: 'smooth' });
+                }
+            }, 50);
         }
 
         function renderMenuGrid(dishesToRender) {
