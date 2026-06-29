@@ -1365,7 +1365,7 @@
             setTimeout(() => {
                 const grid = document.getElementById('dynamic-menu-grid');
                 if (grid) { // Safety check to make sure the grid exists
-                    const yOffset = -95; 
+                    const yOffset = -100; 
                     const y = grid.getBoundingClientRect().top + window.pageYOffset + yOffset;
                     window.scrollTo({ top: y, behavior: 'smooth' });
                 }
