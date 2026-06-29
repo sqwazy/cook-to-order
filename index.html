@@ -1361,13 +1361,12 @@
 
             renderMenuGrid(displayDishes);
 
-            // NEW: Anchor to the entire Menu Section so filter buttons stay visible!
+            // NEW: Anchor the screen to prevent mobile jumping
             setTimeout(() => {
-                const menuContainer = document.getElementById('menu-section');
-                if (menuContainer) { 
-                    // -100 perfectly clears your fixed navbar so the title and filters stay on screen
-                    const yOffset = -100; 
-                    const y = menuContainer.getBoundingClientRect().top + window.pageYOffset + yOffset;
+                const grid = document.getElementById('dynamic-menu-grid');
+                if (grid) { // Safety check to make sure the grid exists
+                    const yOffset = -80; 
+                    const y = grid.getBoundingClientRect().top + window.pageYOffset + yOffset;
                     window.scrollTo({ top: y, behavior: 'smooth' });
                 }
             }, 50);
