@@ -219,7 +219,7 @@
                 </div>
             </div>
 
-            <div class="w-full lg:w-[25%] flex justify-center lg:justify-end items-center pb-6 lg:pb-20 z-20 dynamic-text"
+            <div class="w-full lg:w-[25%] flex justify-center lg:justify-end items-center self-center pb-6 z-20 dynamic-text"
                 id="right-card">
                 <div
                     class="bg-[#3d2a1d]/60 backdrop-blur-xl border border-white/10 rounded-[2rem] p-6 md:p-8 shadow-2xl shadow-black/40 w-full max-w-[320px] md:max-w-[380px] lg:max-w-[320px]">
@@ -231,10 +231,10 @@
                         </div>
                         <button onclick="toggleHeroLike()"
                             class="flex flex-col items-center group cursor-pointer focus:outline-none">
-                            
+
                             <div
                                 class="bg-black/20 md:group-hover:bg-white/10 p-2 rounded-full transition-colors duration-300 border border-transparent md:group-hover:border-white/20">
-                                
+
                                 <svg id="hero-like-icon"
                                     class="w-5 h-5 lg:w-6 lg:h-6 text-stone-400 md:group-hover:scale-110 md:group-hover:text-white transition-all duration-300"
                                     fill="currentColor" viewBox="0 0 20 20">
@@ -243,7 +243,7 @@
                                         clip-rule="evenodd"></path>
                                 </svg>
                             </div>
-                            
+
                             <span id="likes-count"
                                 class="text-[9px] lg:text-[10px] font-bold text-stone-400 mt-1 transition-colors duration-300 group-hover:text-stone-300">342
                                 LIKES</span>
@@ -360,7 +360,8 @@
                 </div>
             </div>
 
-            <div id="dynamic-menu-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 min-h-[70vh] content-start">
+            <div id="dynamic-menu-grid"
+                class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 min-h-[70vh] content-start">
             </div>
         </div>
     </main>
@@ -805,6 +806,7 @@
         // ==========================================
         // UNIVERSAL MOBILE SCROLL LOCK
         // ==========================================
+
         function lockScroll() {
             document.documentElement.classList.add('overflow-hidden', 'overscroll-none');
             document.body.classList.add('overflow-hidden', 'overscroll-none');
@@ -814,6 +816,9 @@
             document.documentElement.classList.remove('overflow-hidden', 'overscroll-none');
             document.body.classList.remove('overflow-hidden', 'overscroll-none');
         }
+        // NEW: Instantly lock the screen when the page loads!
+        lockScroll();
+
         let currentIndex = 0;
         let isAnimating = false;
         let autoPlayTimer;
@@ -902,15 +907,26 @@
             }
         }
 
-        // Splash Screen
-        setTimeout(function () {
-            const splashScreen = document.getElementById('intro-splash');
-            splashScreen.classList.add('fade-out-splash');
-            setTimeout(() => {
-                splashScreen.remove();
-                startAutoPlay();
-            }, 1000);
-        }, 4500);
+        window.addEventListener('load', () => {
+            // 1. Force camera to the very top immediately
+            window.scrollTo(0, 0);
+
+            setTimeout(function () {
+                const splashScreen = document.getElementById('intro-splash');
+                if (splashScreen) {
+                    splashScreen.classList.add('fade-out-splash');
+
+                    // 2. Double-check we are at the top before unlocking
+                    window.scrollTo(0, 0);
+                    unlockScroll();
+
+                    setTimeout(() => {
+                        splashScreen.remove();
+                        if (typeof startAutoPlay === 'function') startAutoPlay();
+                    }, 1000);
+                }
+            }, 4500);
+        });
 
         function startAutoPlay() {
             autoPlayTimer = setInterval(() => {
@@ -1230,7 +1246,7 @@
             closeCart();
         }
 
-       // ==========================================
+        // ==========================================
         // NEW: MOBILE NAV DRAWER LOGIC
         // ==========================================
         function openNav() {
@@ -1263,7 +1279,7 @@
 
             setTimeout(() => { bg.classList.add('hidden'); }, 300);
         }
-        
+
         // ==========================================
         // NEW: AUTHENTICATION LOGIC
         // ==========================================
@@ -1368,7 +1384,7 @@
             setTimeout(() => {
                 const grid = document.getElementById('dynamic-menu-grid');
                 if (grid) { // Safety check to make sure the grid exists
-                    const yOffset = -180; 
+                    const yOffset = -180;
                     const y = grid.getBoundingClientRect().top + window.pageYOffset + yOffset;
                     window.scrollTo({ top: y, behavior: 'smooth' });
                 }
