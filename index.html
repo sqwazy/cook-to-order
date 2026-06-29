@@ -231,16 +231,19 @@
                         </div>
                         <button onclick="toggleHeroLike()"
                             class="flex flex-col items-center group cursor-pointer focus:outline-none">
+                            
                             <div
-                                class="bg-black/20 group-hover:bg-red-500/20 p-2 rounded-full transition-colors duration-300 border border-transparent group-hover:border-red-500/30">
+                                class="bg-black/20 md:group-hover:bg-white/10 p-2 rounded-full transition-colors duration-300 border border-transparent md:group-hover:border-white/20">
+                                
                                 <svg id="hero-like-icon"
-                                    class="w-5 h-5 lg:w-6 lg:h-6 text-stone-400 group-hover:scale-110 md:group-hover:text-red-500 transition-all duration-300"
+                                    class="w-5 h-5 lg:w-6 lg:h-6 text-stone-400 md:group-hover:scale-110 md:group-hover:text-white transition-all duration-300"
                                     fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd"
                                         d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"
                                         clip-rule="evenodd"></path>
                                 </svg>
                             </div>
+                            
                             <span id="likes-count"
                                 class="text-[9px] lg:text-[10px] font-bold text-stone-400 mt-1 transition-colors duration-300 group-hover:text-stone-300">342
                                 LIKES</span>
@@ -1365,7 +1368,7 @@
             setTimeout(() => {
                 const grid = document.getElementById('dynamic-menu-grid');
                 if (grid) { // Safety check to make sure the grid exists
-                    const yOffset = -100; 
+                    const yOffset = -180; 
                     const y = grid.getBoundingClientRect().top + window.pageYOffset + yOffset;
                     window.scrollTo({ top: y, behavior: 'smooth' });
                 }
@@ -1393,8 +1396,10 @@
                             Ksh ${dish.rawPrice}
                         </div>
                         
-                        <button onclick="toggleGridLike(${originalIndex}, event)" class="absolute top-3 right-3 bg-black/60 backdrop-blur-md px-2.5 py-1.5 rounded-xl flex items-center shadow-lg border border-white/10 hover:bg-black/80 transition-colors group/btn z-10">
-                            <svg id="grid-like-icon-${originalIndex}" class="w-3.5 h-3.5 ${heartClass} group-hover/btn:scale-110 group-hover/btn:text-red-500 transition-all duration-300 mr-1.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"></path></svg>
+                        <button onclick="toggleGridLike(${originalIndex}, event)" class="absolute top-3 right-3 bg-black/60 backdrop-blur-md px-2.5 py-1.5 rounded-xl flex items-center shadow-lg border border-white/10 md:hover:bg-black/80 transition-colors group/btn z-10">
+                            
+                            <svg id="grid-like-icon-${originalIndex}" class="w-3.5 h-3.5 ${heartClass} md:group-hover/btn:scale-110 md:group-hover/btn:text-red-500 transition-all duration-300 mr-1.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"></path></svg>
+                            
                             <span id="grid-like-count-${originalIndex}" class="text-[10px] font-bold text-white tracking-wide">${dish.likes} LIKES</span>
                         </button>
                     </div>
