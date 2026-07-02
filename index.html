@@ -162,7 +162,8 @@
                 <div id="nav-logged-in" class="hidden items-center space-x-4 lg:space-x-5">
                     <div class="flex flex-col items-end mr-1">
                         <span class="text-[9px] text-stone-500 font-bold uppercase tracking-widest">Welcome</span>
-                        <span id="nav-user-name" class="text-xs font-bold text-amber-500 truncate max-w-[120px]">User</span>
+                        <span id="nav-user-name"
+                            class="text-xs font-bold text-amber-500 truncate max-w-[120px]">User</span>
                     </div>
                     <button onclick="handleLogOut()"
                         class="bg-white/5 hover:bg-red-500/20 text-stone-300 hover:text-red-400 border border-white/10 hover:border-red-500/30 px-5 py-2 rounded-full text-sm font-bold transition">Log
@@ -710,12 +711,25 @@
             </a>
         </div>
         <div class="p-6 border-t border-white/5 flex flex-col gap-3">
-            <button onclick="openAuth('login')"
-                class="w-full py-3 rounded-xl border border-white/10 text-stone-300 font-semibold hover:bg-white/5 transition">Log
-                In</button>
-            <button onclick="openAuth('signup')"
-                class="w-full py-3 rounded-xl bg-amber-600 text-white font-bold hover:bg-amber-500 shadow-lg shadow-amber-900/40 transition">Sign
-                Up</button>
+            <div id="mobile-logged-out" class="flex flex-col gap-3">
+                <button onclick="openAuth('login')"
+                    class="w-full py-3 rounded-xl border border-white/10 text-stone-300 font-semibold hover:bg-white/5 transition">Log
+                    In</button>
+                <button onclick="openAuth('signup')"
+                    class="w-full py-3 rounded-xl bg-amber-600 text-white font-bold hover:bg-amber-500 shadow-lg shadow-amber-900/40 transition">Sign
+                    Up</button>
+            </div>
+
+            <div id="mobile-logged-in" class="hidden flex-col gap-3">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs text-stone-500 font-bold uppercase tracking-widest">Welcome,</span>
+                    <span id="mobile-user-name" class="text-lg font-bold text-amber-500 truncate">User</span>
+                </div>
+                <button onclick="handleLogOut(); closeNav();"
+                    class="w-full py-3 rounded-xl border border-red-500/30 text-red-400 font-semibold hover:bg-red-500/10 transition">Log
+                    Out</button>
+            </div>
+
         </div>
     </div>
     <div id="auth-modal" class="fixed inset-0 z-[400] hidden flex items-center justify-center px-6">
@@ -816,116 +830,129 @@
 
     <script type="module">
         // FIREBASE INITIALIZATION & AUTHENTICATION
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
-      import { 
-        getAuth, 
-        createUserWithEmailAndPassword, 
-        signInWithEmailAndPassword,
-        onAuthStateChanged, // NEW: The Observer
-        signOut             // NEW: The Logout Tool
-      } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js"; 
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+        import {
+            getAuth,
+            createUserWithEmailAndPassword,
+            signInWithEmailAndPassword,
+            onAuthStateChanged, // NEW: The Observer
+            signOut             // NEW: The Logout Tool
+        } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
 
-      const firebaseConfig = {
-        apiKey: "AIzaSyCrwuiHQVAAGpeyKswJ19TXzPyAwfaW8fU",
-        authDomain: "mombasa-cto.firebaseapp.com",
-        projectId: "mombasa-cto",
-        storageBucket: "mombasa-cto.firebasestorage.app",
-        messagingSenderId: "725798162014",
-        appId: "1:725798162014:web:476760e0d358c0b8b72ecf"
-      };
+        const firebaseConfig = {
+            apiKey: "AIzaSyCrwuiHQVAAGpeyKswJ19TXzPyAwfaW8fU",
+            authDomain: "mombasa-cto.firebaseapp.com",
+            projectId: "mombasa-cto",
+            storageBucket: "mombasa-cto.firebasestorage.app",
+            messagingSenderId: "725798162014",
+            appId: "1:725798162014:web:476760e0d358c0b8b72ecf"
+        };
 
-      const app = initializeApp(firebaseConfig);
-      const auth = getAuth(app);
-      
-// ==========================================
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+       // ==========================================
       // THE AUTH STATE OBSERVER (The Brain)
       // ==========================================
       onAuthStateChanged(auth, (user) => {
+          // Desktop elements
           const loggedOutNav = document.getElementById('nav-logged-out');
           const loggedInNav = document.getElementById('nav-logged-in');
           const navUserName = document.getElementById('nav-user-name');
+          
+          // Mobile elements (NEW)
+          const mobileLoggedOut = document.getElementById('mobile-logged-out');
+          const mobileLoggedIn = document.getElementById('mobile-logged-in');
+          const mobileUserName = document.getElementById('mobile-user-name');
 
           if (user) {
               // --- THE USER IS LOGGED IN ---
-              console.log("👀 Observer says: LOGGED IN as", user.email);
+              const username = user.email.split('@')[0];
               
-              if (loggedOutNav) {
-                  loggedOutNav.classList.remove('lg:flex');
-                  loggedOutNav.classList.add('hidden');
+              // Update Desktop
+              if (loggedOutNav) loggedOutNav.classList.remove('lg:flex');
+              if (loggedInNav) loggedInNav.classList.add('lg:flex');
+              if (navUserName) navUserName.innerText = username;
+              
+              // Update Mobile
+              if (mobileLoggedOut) {
+                  mobileLoggedOut.classList.remove('flex');
+                  mobileLoggedOut.classList.add('hidden');
               }
-              if (loggedInNav) {
-                  loggedInNav.classList.remove('hidden');
-                  loggedInNav.classList.add('lg:flex');
+              if (mobileLoggedIn) {
+                  mobileLoggedIn.classList.remove('hidden');
+                  mobileLoggedIn.classList.add('flex');
               }
-              if (navUserName) {
-                  // Extract "sqwazy" from "sqwazy@gmail.com" to use as a display name
-                  navUserName.innerText = user.email.split('@')[0]; 
-              }
+              if (mobileUserName) mobileUserName.innerText = username;
               
           } else {
               // --- THE USER IS LOGGED OUT ---
-              console.log("👀 Observer says: NOBODY IS LOGGED IN.");
               
-              if (loggedInNav) {
-                  loggedInNav.classList.remove('lg:flex');
-                  loggedInNav.classList.add('hidden');
+              // Update Desktop
+              if (loggedInNav) loggedInNav.classList.remove('lg:flex');
+              if (loggedOutNav) loggedOutNav.classList.add('lg:flex');
+              
+              // Update Mobile
+              if (mobileLoggedIn) {
+                  mobileLoggedIn.classList.remove('flex');
+                  mobileLoggedIn.classList.add('hidden');
               }
-              if (loggedOutNav) {
-                  loggedOutNav.classList.remove('hidden');
-                  loggedOutNav.classList.add('lg:flex');
+              if (mobileLoggedOut) {
+                  mobileLoggedOut.classList.remove('hidden');
+                  mobileLoggedOut.classList.add('flex');
               }
           }
       });
 
-      // ==========================================
-      // SECURE LOG OUT LOGIC
-      // ==========================================
-      window.handleLogOut = function() {
-          signOut(auth).then(() => {
-              console.log("🔥 Successfully logged out!");
-              alert("You have been securely logged out.");
-          }).catch((error) => {
-              console.error("Logout Error:", error);
-          });
-      };
-      
-      // ==========================================
-      // EXISTING SIGN UP / LOG IN LOGIC
-      // ==========================================
-      window.handleAuthSubmit = function(event) {
-          event.preventDefault();
+        // ==========================================
+        // SECURE LOG OUT LOGIC
+        // ==========================================
+        window.handleLogOut = function () {
+            signOut(auth).then(() => {
+                console.log("🔥 Successfully logged out!");
+                alert("You have been securely logged out.");
+            }).catch((error) => {
+                console.error("Logout Error:", error);
+            });
+        };
 
-          const email = document.getElementById('auth-email').value;
-          const password = document.getElementById('auth-password').value;
-          const submitBtn = document.getElementById('auth-submit-btn');
-          
-          const isSignUpMode = submitBtn.innerText.trim().toLowerCase() === 'create account';
+        // ==========================================
+        // EXISTING SIGN UP / LOG IN LOGIC
+        // ==========================================
+        window.handleAuthSubmit = function (event) {
+            event.preventDefault();
 
-          if (!email || !password) {
-              alert("Please fill in all fields.");
-              return;
-          }
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            const submitBtn = document.getElementById('auth-submit-btn');
 
-          if (isSignUpMode) {
-              createUserWithEmailAndPassword(auth, email, password)
-                  .then((userCredential) => {
-                      alert("Account created successfully! Welcome aboard.");
-                      if (typeof closeAuth === 'function') closeAuth();
-                  })
-                  .catch((error) => {
-                      alert("Sign Up Error: " + error.message);
-                  });
-          } else {
-              signInWithEmailAndPassword(auth, email, password)
-                  .then((userCredential) => {
-                      alert("Welcome back!");
-                      if (typeof closeAuth === 'function') closeAuth();
-                  })
-                  .catch((error) => {
-                      alert("Log In Error: " + error.message);
-                  });
-          }
-      };
+            const isSignUpMode = submitBtn.innerText.trim().toLowerCase() === 'create account';
+
+            if (!email || !password) {
+                alert("Please fill in all fields.");
+                return;
+            }
+
+            if (isSignUpMode) {
+                createUserWithEmailAndPassword(auth, email, password)
+                    .then((userCredential) => {
+                        alert("Account created successfully! Welcome aboard.");
+                        if (typeof closeAuth === 'function') closeAuth();
+                    })
+                    .catch((error) => {
+                        alert("Sign Up Error: " + error.message);
+                    });
+            } else {
+                signInWithEmailAndPassword(auth, email, password)
+                    .then((userCredential) => {
+                        alert("Welcome back!");
+                        if (typeof closeAuth === 'function') closeAuth();
+                    })
+                    .catch((error) => {
+                        alert("Log In Error: " + error.message);
+                    });
+            }
+        };
     </script>
     <script>
         // ==========================================
@@ -1269,31 +1296,31 @@
         }
 
         function renderCart() {
-    const container = document.getElementById('cart-items-container');
-    const subtotalEl = document.getElementById('cart-subtotal');
-    const deliveryEl = document.getElementById('cart-delivery-fee');
-    const totalEl = document.getElementById('cart-total-price');
+            const container = document.getElementById('cart-items-container');
+            const subtotalEl = document.getElementById('cart-subtotal');
+            const deliveryEl = document.getElementById('cart-delivery-fee');
+            const totalEl = document.getElementById('cart-total-price');
 
-    container.innerHTML = '';
+            container.innerHTML = '';
 
-    // If cart is empty, clear the display and reset all totals
-    if (cart.length === 0) {
-        container.innerHTML = `
+            // If cart is empty, clear the display and reset all totals
+            if (cart.length === 0) {
+                container.innerHTML = `
             <div class="h-full flex flex-col items-center justify-center text-stone-500 opacity-50">
                 <svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                 <p class="font-medium">Your cart is empty.</p>
             </div>`;
-        
-        subtotalEl.innerText = "Ksh 0";
-        deliveryEl.innerText = "Ksh 0";
-        totalEl.innerText = "Ksh 0";
-        return;
-    }
 
-    // If cart has items, render them
-    cart.forEach(item => {
-        const itemTotal = item.price * item.qty;
-        container.innerHTML += `
+                subtotalEl.innerText = "Ksh 0";
+                deliveryEl.innerText = "Ksh 0";
+                totalEl.innerText = "Ksh 0";
+                return;
+            }
+
+            // If cart has items, render them
+            cart.forEach(item => {
+                const itemTotal = item.price * item.qty;
+                container.innerHTML += `
             <div class="flex items-center gap-3 bg-white/5 p-3 rounded-2xl border border-white/5">
                 <img src="${item.image}" class="w-14 h-14 rounded-full object-cover shadow-md" alt="${item.title}">
                 <div class="flex-1">
@@ -1313,11 +1340,11 @@
                 </button>
             </div>
         `;
-    });
+            });
 
-    // Run the math function to update the footer prices
-    updateCartTotal();
-}
+            // Run the math function to update the footer prices
+            updateCartTotal();
+        }
 
         function updateCartTotal() {
             let subtotal = 0;
