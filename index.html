@@ -557,6 +557,11 @@
 
             <div class="p-6 bg-[#2c1e16] border-t border-white/5">
                 <div class="mb-4">
+                    <p class="text-xs text-stone-400 font-semibold uppercase tracking-wider mb-2">Phone Number</p>
+                    <input type="tel" id="delivery-phone" placeholder="e.g., 0712 345 678" required
+                        class="w-full bg-black/40 text-stone-200 text-sm px-4 py-3 rounded-xl border border-white/5 focus:outline-none focus:border-amber-500 transition-colors">
+                </div>
+                <div class="mb-4">
                     <p class="text-xs text-stone-400 font-semibold uppercase tracking-wider mb-2">Delivery Date</p>
                     <input type="date" id="delivery-date" onchange="validateDeliveryTime()"
                         class="w-full bg-black/40 text-stone-200 text-sm px-4 py-3 rounded-xl border border-white/5 focus:outline-none focus:border-amber-500 transition-colors">
@@ -649,7 +654,7 @@
             </div>
         </div>
 
-        <button onclick="processFirebaseOrder()"
+        <button id="checkout-btn" onclick="processFirebaseOrder()"
             class="w-full flex items-center justify-center bg-amber-600 hover:bg-amber-500 text-white py-4 rounded-xl text-sm font-bold transition shadow-lg shadow-amber-900/40 group">
             Proceed to Checkout
             <svg class="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor"
@@ -699,7 +704,7 @@
                 </svg>
                 Full Menu
             </a>
-            <a href="#" onclick="closeNav()"
+            <a href="javascript:void(0)" onclick="closeNav(); setTimeout(openMyOrders, 300);"
                 class="text-lg font-semibold text-stone-300 hover:text-amber-500 transition flex items-center gap-4">
                 <svg class="w-6 h-6 text-stone-500" fill="none" stroke="currentColor" stroke-width="2"
                     viewBox="0 0 24 24">
@@ -722,7 +727,7 @@
 
             <div id="mobile-logged-in" class="hidden flex-col gap-3">
                 <div class="flex items-center justify-between mb-2">
-                    <span class="text-xs text-stone-500 font-bold uppercase tracking-widest">Welcome,</span>
+                    <span class="text-xs text-stone-500 font-bold uppercase tracking-widest">Welcome</span>
                     <span id="mobile-user-name" class="text-lg font-bold text-amber-500 truncate">User</span>
                 </div>
                 <button onclick="handleLogOut(); closeNav();"
@@ -827,7 +832,26 @@
             </div>
         </div>
     </div>
+    <div id="orders-drawer-bg"
+        class="fixed inset-0 z-[300] bg-black/60 backdrop-blur-sm hidden transition-opacity opacity-0 duration-300"
+        onclick="closeMyOrders()"></div>
 
+    <div id="orders-drawer"
+        class="fixed top-0 right-0 bottom-0 z-[300] w-full sm:w-[450px] bg-[#1a110c] border-l border-white/10 shadow-2xl transform translate-x-full transition-transform duration-300 flex flex-col">
+
+        <div class="flex justify-between items-center mb-6 px-6 pt-6">
+            <h2 class="text-2xl font-extrabold text-white tracking-wide">My Orders</h2>
+            <button onclick="closeMyOrders()"
+                class="p-2 text-stone-400 hover:text-white bg-white/5 hover:bg-red-500/20 rounded-full transition border border-transparent hover:border-red-500/30">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+
+        <div id="orders-list-container" class="flex-1 overflow-y-auto hide-scrollbar px-6 pb-12 flex flex-col gap-4">
+        </div>
+    </div>
     <script type="module">
         // FIREBASE INITIALIZATION & AUTHENTICATION
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
@@ -835,9 +859,21 @@
             getAuth,
             createUserWithEmailAndPassword,
             signInWithEmailAndPassword,
-            onAuthStateChanged, // NEW: The Observer
-            signOut             // NEW: The Logout Tool
+            onAuthStateChanged,
+            signOut
         } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+
+        // NEW: Import the Firestore Database tools PLUS the Search tools!
+        import {
+            getFirestore,
+            collection,
+            addDoc,
+            serverTimestamp,
+            query,     // NEW: Lets us search
+            where,     // NEW: Lets us filter by email
+            getDocs,   // NEW: Lets us download the results
+            orderBy    // NEW: Lets us sort by newest first
+        } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCrwuiHQVAAGpeyKswJ19TXzPyAwfaW8fU",
@@ -850,59 +886,72 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        const db = getFirestore(app);
 
-       // ==========================================
-      // THE AUTH STATE OBSERVER (The Brain)
-      // ==========================================
-      onAuthStateChanged(auth, (user) => {
-          // Desktop elements
-          const loggedOutNav = document.getElementById('nav-logged-out');
-          const loggedInNav = document.getElementById('nav-logged-in');
-          const navUserName = document.getElementById('nav-user-name');
-          
-          // Mobile elements (NEW)
-          const mobileLoggedOut = document.getElementById('mobile-logged-out');
-          const mobileLoggedIn = document.getElementById('mobile-logged-in');
-          const mobileUserName = document.getElementById('mobile-user-name');
+        // Expose the tools to your main script
+        window.db = db;
+        window.collection = collection;
+        window.addDoc = addDoc;
+        window.serverTimestamp = serverTimestamp;
 
-          if (user) {
-              // --- THE USER IS LOGGED IN ---
-              const username = user.email.split('@')[0];
-              
-              // Update Desktop
-              if (loggedOutNav) loggedOutNav.classList.remove('lg:flex');
-              if (loggedInNav) loggedInNav.classList.add('lg:flex');
-              if (navUserName) navUserName.innerText = username;
-              
-              // Update Mobile
-              if (mobileLoggedOut) {
-                  mobileLoggedOut.classList.remove('flex');
-                  mobileLoggedOut.classList.add('hidden');
-              }
-              if (mobileLoggedIn) {
-                  mobileLoggedIn.classList.remove('hidden');
-                  mobileLoggedIn.classList.add('flex');
-              }
-              if (mobileUserName) mobileUserName.innerText = username;
-              
-          } else {
-              // --- THE USER IS LOGGED OUT ---
-              
-              // Update Desktop
-              if (loggedInNav) loggedInNav.classList.remove('lg:flex');
-              if (loggedOutNav) loggedOutNav.classList.add('lg:flex');
-              
-              // Update Mobile
-              if (mobileLoggedIn) {
-                  mobileLoggedIn.classList.remove('flex');
-                  mobileLoggedIn.classList.add('hidden');
-              }
-              if (mobileLoggedOut) {
-                  mobileLoggedOut.classList.remove('hidden');
-                  mobileLoggedOut.classList.add('flex');
-              }
-          }
-      });
+        window.query = query;
+        window.where = where;
+        window.getDocs = getDocs;
+        window.orderBy = orderBy;
+        window.auth = auth; // NEW: Expose auth so we know who is logged in!
+
+        // ==========================================
+        // THE AUTH STATE OBSERVER (The Brain)
+        // ==========================================
+        onAuthStateChanged(auth, (user) => {
+            // Desktop elements
+            const loggedOutNav = document.getElementById('nav-logged-out');
+            const loggedInNav = document.getElementById('nav-logged-in');
+            const navUserName = document.getElementById('nav-user-name');
+
+            // Mobile elements (NEW)
+            const mobileLoggedOut = document.getElementById('mobile-logged-out');
+            const mobileLoggedIn = document.getElementById('mobile-logged-in');
+            const mobileUserName = document.getElementById('mobile-user-name');
+
+            if (user) {
+                // --- THE USER IS LOGGED IN ---
+                const username = user.email.split('@')[0];
+
+                // Update Desktop
+                if (loggedOutNav) loggedOutNav.classList.remove('lg:flex');
+                if (loggedInNav) loggedInNav.classList.add('lg:flex');
+                if (navUserName) navUserName.innerText = username;
+
+                // Update Mobile
+                if (mobileLoggedOut) {
+                    mobileLoggedOut.classList.remove('flex');
+                    mobileLoggedOut.classList.add('hidden');
+                }
+                if (mobileLoggedIn) {
+                    mobileLoggedIn.classList.remove('hidden');
+                    mobileLoggedIn.classList.add('flex');
+                }
+                if (mobileUserName) mobileUserName.innerText = username;
+
+            } else {
+                // --- THE USER IS LOGGED OUT ---
+
+                // Update Desktop
+                if (loggedInNav) loggedInNav.classList.remove('lg:flex');
+                if (loggedOutNav) loggedOutNav.classList.add('lg:flex');
+
+                // Update Mobile
+                if (mobileLoggedIn) {
+                    mobileLoggedIn.classList.remove('flex');
+                    mobileLoggedIn.classList.add('hidden');
+                }
+                if (mobileLoggedOut) {
+                    mobileLoggedOut.classList.remove('hidden');
+                    mobileLoggedOut.classList.add('flex');
+                }
+            }
+        });
 
         // ==========================================
         // SECURE LOG OUT LOGIC
@@ -1384,28 +1433,91 @@
             }
         }
 
-        function processFirebaseOrder() {
+        async function processFirebaseOrder() {
             if (cart.length === 0) {
                 alert("Please add items to your cart first!");
                 return;
             }
-            const deliveryDate = document.getElementById('delivery-date').value;
-            if (!deliveryDate) {
-                alert("Please select a valid delivery date.");
+
+            const currentUser = window.auth ? window.auth.currentUser : null;
+            if (!currentUser) {
+                alert("You must be logged in to place an order!");
+                closeCart();
+                openAuth('login');
                 return;
             }
-            const firebasePayload = {
-                orderItems: cart,
+
+            const deliveryDate = document.getElementById('delivery-date').value;
+            const deliveryPhone = document.getElementById('delivery-phone').value;
+            const deliveryArea = document.getElementById('delivery-selected-text').innerText;
+            const paymentMethod = document.getElementById('payment-selected-text').innerText;
+            const grandTotal = document.getElementById('cart-total-price').innerText;
+
+            // --- UX POINT 2: PHONE VALIDATION ---
+            // Remove any accidental spaces the user typed
+            const cleanPhone = deliveryPhone.replace(/\s+/g, '');
+
+            // Check if it's a valid 10-digit (07... or 01...) or 13-character (+254...) Kenyan number
+            const isValidPhone = /^(07|01)\d{8}$/.test(cleanPhone) || /^\+254(7|1)\d{8}$/.test(cleanPhone);
+
+            if (!isValidPhone) {
+                alert("Please enter a valid Kenyan phone number (e.g., 0712345678).");
+                return;
+            }
+
+            if (!deliveryDate || deliveryArea === "Select your area...") {
+                alert("Please fill in all delivery details.");
+                return;
+            }
+
+            // --- UX POINT 1: THE BUTTON LOCK ---
+            const checkoutBtn = document.getElementById('checkout-btn');
+            const originalBtnHTML = checkoutBtn.innerHTML; // Save the original text and icon
+
+            checkoutBtn.disabled = true;
+            checkoutBtn.classList.add('opacity-75', 'cursor-not-allowed');
+            checkoutBtn.innerHTML = `
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Processing...
+            `;
+
+            const orderPayload = {
+                customerEmail: currentUser.email,
+                customerPhone: cleanPhone,
+                items: cart,
                 deliveryDate: deliveryDate,
                 deliveryTime: deliveryPreference,
+                deliveryArea: deliveryArea,
+                paymentMethod: paymentMethod,
+                totalPrice: grandTotal,
                 orderStatus: "Pending",
-                timestamp: new Date().toISOString()
+                timestamp: window.serverTimestamp()
             };
-            console.log("READY TO SEND TO FIREBASE:", firebasePayload);
-            alert(`Awesome! Your order is ready to be routed to Firebase.\n\nDelivery scheduled for: ${deliveryDate} (${deliveryPreference})`);
-            cart = [];
-            updateCartBadge();
-            closeCart();
+
+            try {
+                const docRef = await window.addDoc(window.collection(window.db, "orders"), orderPayload);
+                alert(`Awesome! Your order has been placed successfully.\nOrder ID: ${docRef.id}`);
+
+                cart = [];
+                updateCartBadge();
+                renderCart();
+                closeCart();
+
+            } catch (error) {
+                console.error("Error adding document: ", error);
+                alert("There was an error processing your order. Please try again.");
+            } finally {
+                // --- RELEASE THE LOCK ---
+                // No matter what happens (success or failure), restore the button back to normal
+                if (checkoutBtn) {
+                    checkoutBtn.disabled = false;
+                    checkoutBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+                    checkoutBtn.innerHTML = originalBtnHTML;
+                }
+            }
         }
 
         // ==========================================
@@ -1644,7 +1756,111 @@
             if (paymentBtn && !paymentBtn.contains(event.target) && !paymentList.contains(event.target)) {
                 paymentList.classList.add('hidden');
             }
-        });
+        }
+    );
+    // --- UI CONTROLS FOR MY ORDERS ---
+        function openMyOrders() {
+            const currentUser = window.auth ? window.auth.currentUser : null;
+            if (!currentUser) {
+                alert("You must be logged in to view your orders.");
+                openAuth('login');
+                return;
+            }
+
+            // --- NEW: Lock the background scroll ---
+            document.body.classList.add('overflow-hidden');
+
+            document.getElementById('orders-drawer-bg').classList.remove('hidden');
+            setTimeout(() => {
+                document.getElementById('orders-drawer-bg').classList.remove('opacity-0');
+                document.getElementById('orders-drawer').classList.remove('translate-x-full');
+            }, 10);
+            
+            fetchMyOrders(currentUser.email);
+        }
+
+        function closeMyOrders() {
+            document.getElementById('orders-drawer-bg').classList.add('opacity-0');
+            document.getElementById('orders-drawer').classList.add('translate-x-full');
+            
+            // --- NEW: Unlock the background scroll ---
+            document.body.classList.remove('overflow-hidden');
+
+            setTimeout(() => {
+                document.getElementById('orders-drawer-bg').classList.add('hidden');
+            }, 300);
+        }
+
+        // --- THE FIREBASE FETCH FUNCTION ---
+        async function fetchMyOrders(userEmail) {
+            const container = document.getElementById('orders-list-container');
+            container.innerHTML = `<div class="text-center text-amber-500 mt-10 animate-pulse font-bold">Loading your orders...</div>`;
+
+            try {
+                // 1. Build the query: "Go to orders, find where email matches this user"
+                const q = window.query(
+                    window.collection(window.db, "orders"), 
+                    window.where("customerEmail", "==", userEmail)
+                );
+
+                // 2. Execute the query
+                const querySnapshot = await window.getDocs(q);
+                
+                if (querySnapshot.empty) {
+                    container.innerHTML = `
+                        <div class="h-full flex flex-col items-center justify-center text-stone-500 opacity-50 mt-20">
+                            <svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                            <p class="font-medium">You haven't placed any orders yet.</p>
+                        </div>`;
+                    return;
+                }
+
+                // 3. Extract the data and sort it newest-first
+                let fetchedOrders = [];
+                querySnapshot.forEach((doc) => {
+                    fetchedOrders.push({ id: doc.id, ...doc.data() });
+                });
+                
+                // Sort by timestamp (newest first)
+                fetchedOrders.sort((a, b) => b.timestamp - a.timestamp);
+
+                // 4. Render the UI
+                container.innerHTML = '';
+                fetchedOrders.forEach(order => {
+                    // Figure out what color to make the status badge
+                    let statusColor = "bg-stone-500";
+                    if(order.orderStatus === "Pending") statusColor = "bg-amber-500";
+                    if(order.orderStatus === "Preparing") statusColor = "bg-blue-500";
+                    if(order.orderStatus === "Delivered") statusColor = "bg-green-500";
+
+                    // Create a quick list of what they bought
+                    const itemsList = order.items.map(i => `${i.qty}x ${i.title}`).join(', ');
+
+                    container.innerHTML += `
+                        <div class="bg-[#2c1e16] border border-white/5 p-4 rounded-xl shadow-lg">
+                            <div class="flex justify-between items-start mb-3 border-b border-white/5 pb-3">
+                                <div>
+                                    <span class="text-[10px] text-stone-400 font-bold uppercase tracking-wider block mb-1">Order ID: ${order.id.slice(0, 8)}...</span>
+                                    <span class="text-lg font-extrabold text-white">${order.totalPrice}</span>
+                                </div>
+                                <span class="px-2.5 py-1 rounded-md text-[10px] font-bold text-white uppercase tracking-wider ${statusColor}">
+                                    ${order.orderStatus}
+                                </span>
+                            </div>
+                            <div class="text-sm text-stone-300 mb-2 font-medium">${itemsList}</div>
+                            <div class="text-xs text-stone-500 flex flex-col gap-1">
+                                <span>📅 ${order.deliveryDate} (${order.deliveryTime})</span>
+                                <span>📍 ${order.deliveryArea}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+
+            } catch (error) {
+                console.error("Error fetching orders: ", error);
+                container.innerHTML = `<div class="text-center text-red-400 mt-10 font-bold">Failed to load orders. Please try again later.</div>`;
+            }
+        }
     </script>
 </body>
 
