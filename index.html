@@ -832,19 +832,45 @@
             </div>
         </div>
     </div>
-    <div id="orders-drawer-bg" class="fixed inset-0 z-[300] bg-black/60 backdrop-blur-sm hidden transition-opacity opacity-0 duration-300" onclick="closeMyOrders()"></div>
+    <div id="orders-drawer-bg"
+        class="fixed inset-0 z-[300] bg-black/60 backdrop-blur-sm hidden transition-opacity opacity-0 duration-300"
+        onclick="closeMyOrders()"></div>
 
-    <div id="orders-drawer" class="fixed top-0 right-0 bottom-0 z-[300] w-full sm:w-[450px] bg-[#1a110c] border-l border-white/10 shadow-2xl transform translate-x-full transition-transform duration-300 flex flex-col overscroll-none">
-        
+    <div id="orders-drawer"
+        class="fixed top-0 right-0 bottom-0 z-[300] w-full sm:w-[450px] bg-[#1a110c] border-l border-white/10 shadow-2xl transform translate-x-full transition-transform duration-300 flex flex-col overscroll-none">
+
         <div class="flex justify-between items-center mb-6 px-6 pt-6">
             <h2 class="text-2xl font-extrabold text-white tracking-wide">My Orders</h2>
-            <button onclick="closeMyOrders()" class="p-2 text-stone-400 hover:text-white bg-white/5 hover:bg-red-500/20 rounded-full transition border border-transparent hover:border-red-500/30">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
+            <button onclick="closeMyOrders()"
+                class="p-2 text-stone-400 hover:text-white bg-white/5 hover:bg-red-500/20 rounded-full transition border border-transparent hover:border-red-500/30">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
             </button>
         </div>
 
-        <div id="orders-list-container" class="flex-1 overflow-y-auto hide-scrollbar px-6 pb-12 flex flex-col gap-4 overscroll-none">
+        <div id="orders-list-container"
+            class="flex-1 overflow-y-auto hide-scrollbar px-6 pb-12 flex flex-col gap-6 overscroll-none">
+
+            <div>
+                <h3 class="text-xs font-bold uppercase tracking-wider text-amber-500 mb-3 flex items-center gap-2">
+                    <span>🔥</span> Active Deliveries
+                </h3>
+                <div id="active-orders-container" class="flex flex-col gap-4">
+                </div>
             </div>
+
+            <hr class="border-white/5 my-2" />
+
+            <div>
+                <h3 class="text-xs font-bold uppercase tracking-wider text-stone-400 mb-3 flex items-center gap-2">
+                    <span>📦</span> Past Orders (Last 5)
+                </h3>
+                <div id="past-orders-container" class="flex flex-col gap-4">
+                </div>
+            </div>
+
+        </div>
     </div>
     <script type="module">
         // FIREBASE INITIALIZATION & AUTHENTICATION
@@ -857,16 +883,18 @@
             signOut
         } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
 
-        // NEW: Import the Firestore Database tools PLUS the Search tools!
+        // Import the Firestore Database tools PLUS the Search tools!
         import {
             getFirestore,
             collection,
             addDoc,
             serverTimestamp,
-            query,     // NEW: Lets us search
-            where,     // NEW: Lets us filter by email
-            getDocs,   // NEW: Lets us download the results
-            orderBy    // NEW: Lets us sort by newest first
+            query,     // Lets us search
+            where,     // Lets us filter by email
+            getDocs,   // Lets us download the results
+            orderBy,   // Lets us sort by newest first
+            limit,     // Protects our database by capping history
+            onSnapshot // Listens to active deliveries in real-time
         } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -887,23 +915,124 @@
         window.collection = collection;
         window.addDoc = addDoc;
         window.serverTimestamp = serverTimestamp;
-
         window.query = query;
         window.where = where;
         window.getDocs = getDocs;
         window.orderBy = orderBy;
-        window.auth = auth; // NEW: Expose auth so we know who is logged in!
+        window.auth = auth;
+
+
+        // =============================================================
+        // FETCH USER ORDERS (OPTIMIZED FOR FIREBASE FREE TIER)
+        // =============================================================
+        window.loadUserOrdersDashboard = function (userEmail) {
+            const activeContainer = document.getElementById('active-orders-container');
+            const pastContainer = document.getElementById('past-orders-container');
+
+            // Show initial loading text
+            activeContainer.innerHTML = `<div class="text-xs text-stone-500 animate-pulse">Checking active orders...</div>`;
+            pastContainer.innerHTML = `<div class="text-xs text-stone-500 animate-pulse">Loading history...</div>`;
+
+            // ---------------------------------------------------------
+            // QUERY 1: LIVE ACTIVE ORDERS (Real-time Listener)
+            // ---------------------------------------------------------
+            const activeQuery = query(
+                collection(db, "orders"),
+                where("customerEmail", "==", userEmail),
+                where("orderStatus", "in", ["Pending", "Preparing", "Ready for Delivery", "Out for Delivery"]),
+                orderBy("timestamp", "desc")
+            );
+
+            onSnapshot(activeQuery, (snapshot) => {
+                if (snapshot.empty) {
+                    activeContainer.innerHTML = `<div class="text-xs text-stone-500 bg-white/5 p-3 rounded-xl border border-white/5">No active orders right now. Time to buy some bread!</div>`;
+                    return;
+                }
+
+                activeContainer.innerHTML = ''; // Clear loading text
+                snapshot.forEach((docSnap) => {
+                    const order = docSnap.data();
+                    activeContainer.innerHTML += buildUserOrderCard(docSnap.id, order);
+                });
+            }, (error) => {
+                console.error("Active feed error:", error);
+                activeContainer.innerHTML = `<div class="text-xs text-red-400">Failed to sync live tracking.</div>`;
+            });
+
+            // ---------------------------------------------------------
+            // QUERY 2: PAST ORDERS HISTORY (Upgraded to a live feed)
+            // ---------------------------------------------------------
+            const historyQuery = query(
+                collection(db, "orders"),
+                where("customerEmail", "==", userEmail),
+                where("orderStatus", "==", "Delivered"),
+                orderBy("timestamp", "desc"),
+                limit(5)
+            );
+
+            // Swapped getDocs for onSnapshot so it updates instantly!
+            onSnapshot(historyQuery, (snapshot) => {
+                if (snapshot.empty) {
+                    pastContainer.innerHTML = `<div class="text-xs text-stone-600 italic">No past orders found.</div>`;
+                    return;
+                }
+
+                pastContainer.innerHTML = ''; // Clear loading text
+                snapshot.forEach((docSnap) => {
+                    const order = docSnap.data();
+                    pastContainer.innerHTML += buildUserOrderCard(docSnap.id, order);
+                });
+            }, (error) => {
+                console.error("History feed error:", error);
+                pastContainer.innerHTML = `<div class="text-xs text-red-400">Failed to load past orders.</div>`;
+            });
+        };
+
+        // =============================================================
+        // HELPER: CARD GENERATOR WITH SYNCHRONIZED BADGE COLORS
+        // =============================================================
+        function buildUserOrderCard(orderId, order) {
+            const itemsList = order.items.map(i => `<li>• ${i.qty}x ${i.title}</li>`).join('');
+
+            let statusColor = "bg-stone-500";
+            if (order.orderStatus === "Pending") statusColor = "bg-amber-500 text-[#1a110c]";
+            if (order.orderStatus === "Preparing") statusColor = "bg-blue-500 text-white";
+            if (order.orderStatus === "Ready for Delivery") statusColor = "bg-purple-500 text-white";
+            if (order.orderStatus === "Out for Delivery") statusColor = "bg-orange-500 text-white";
+            if (order.orderStatus === "Delivered") statusColor = "bg-green-500/20 text-green-400 border border-green-500/30";
+
+            return `
+                <div class="bg-black/20 border border-white/5 p-4 rounded-xl space-y-3">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="text-[9px] text-stone-500 block">ID: ${orderId.slice(0, 6).toUpperCase()}</span>
+                            <span class="text-xs text-stone-300 font-semibold">${order.deliveryArea}</span>
+                        </div>
+                        <span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${statusColor}">
+                            ${order.orderStatus}
+                        </span>
+                    </div>
+                    
+                    <ul class="text-xs text-stone-400 space-y-1 border-t border-white/5 pt-2">
+                        ${itemsList}
+                    </ul>
+                    
+                    <div class="text-[10px] text-stone-500 flex justify-between items-center pt-1">
+                        <span>Total: <strong class="text-white">${order.totalPrice}</strong></span>
+                        <span>${order.deliveryDate}</span>
+                    </div>
+                </div>
+            `;
+        }
 
         // ==========================================
         // THE AUTH STATE OBSERVER (The Brain)
         // ==========================================
         onAuthStateChanged(auth, (user) => {
-            // Desktop elements
             const loggedOutNav = document.getElementById('nav-logged-out');
             const loggedInNav = document.getElementById('nav-logged-in');
             const navUserName = document.getElementById('nav-user-name');
 
-            // Mobile elements (NEW)
             const mobileLoggedOut = document.getElementById('mobile-logged-out');
             const mobileLoggedIn = document.getElementById('mobile-logged-in');
             const mobileUserName = document.getElementById('mobile-user-name');
@@ -912,12 +1041,10 @@
                 // --- THE USER IS LOGGED IN ---
                 const username = user.email.split('@')[0];
 
-                // Update Desktop
                 if (loggedOutNav) loggedOutNav.classList.remove('lg:flex');
                 if (loggedInNav) loggedInNav.classList.add('lg:flex');
                 if (navUserName) navUserName.innerText = username;
 
-                // Update Mobile
                 if (mobileLoggedOut) {
                     mobileLoggedOut.classList.remove('flex');
                     mobileLoggedOut.classList.add('hidden');
@@ -928,14 +1055,14 @@
                 }
                 if (mobileUserName) mobileUserName.innerText = username;
 
+                // ---> THIS IS THE TRIGGER THAT MAKES IT ALL WORK <---
+                window.loadUserOrdersDashboard(user.email);
+
             } else {
                 // --- THE USER IS LOGGED OUT ---
-
-                // Update Desktop
                 if (loggedInNav) loggedInNav.classList.remove('lg:flex');
                 if (loggedOutNav) loggedOutNav.classList.add('lg:flex');
 
-                // Update Mobile
                 if (mobileLoggedIn) {
                     mobileLoggedIn.classList.remove('flex');
                     mobileLoggedIn.classList.add('hidden');
@@ -1751,8 +1878,8 @@
                 paymentList.classList.add('hidden');
             }
         }
-    );
-    // --- UI CONTROLS FOR MY ORDERS ---
+        );
+        // --- UI CONTROLS FOR MY ORDERS ---
         function openMyOrders() {
             const currentUser = window.auth ? window.auth.currentUser : null;
             if (!currentUser) {
@@ -1761,7 +1888,7 @@
                 return;
             }
 
-            // --- NEW: Lock the background scroll ---
+            // --- Lock the background scroll ---
             document.body.classList.add('overflow-hidden');
 
             document.getElementById('orders-drawer-bg').classList.remove('hidden');
@@ -1769,15 +1896,16 @@
                 document.getElementById('orders-drawer-bg').classList.remove('opacity-0');
                 document.getElementById('orders-drawer').classList.remove('translate-x-full');
             }, 10);
-            
-            fetchMyOrders(currentUser.email);
+
+            // NOTE: fetchMyOrders was deleted here. 
+            // The Auth Observer at the top of the file handles loading the data in the background!
         }
 
         function closeMyOrders() {
             document.getElementById('orders-drawer-bg').classList.add('opacity-0');
             document.getElementById('orders-drawer').classList.add('translate-x-full');
-            
-            // --- NEW: Unlock the background scroll ---
+
+            // --- Unlock the background scroll ---
             document.body.classList.remove('overflow-hidden');
 
             setTimeout(() => {
@@ -1785,76 +1913,6 @@
             }, 300);
         }
 
-        // --- THE FIREBASE FETCH FUNCTION ---
-        async function fetchMyOrders(userEmail) {
-            const container = document.getElementById('orders-list-container');
-            container.innerHTML = `<div class="text-center text-amber-500 mt-10 animate-pulse font-bold">Loading your orders...</div>`;
-
-            try {
-                // 1. Build the query: "Go to orders, find where email matches this user"
-                const q = window.query(
-                    window.collection(window.db, "orders"), 
-                    window.where("customerEmail", "==", userEmail)
-                );
-
-                // 2. Execute the query
-                const querySnapshot = await window.getDocs(q);
-                
-                if (querySnapshot.empty) {
-                    container.innerHTML = `
-                        <div class="h-full flex flex-col items-center justify-center text-stone-500 opacity-50 mt-20">
-                            <svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
-                            <p class="font-medium">You haven't placed any orders yet.</p>
-                        </div>`;
-                    return;
-                }
-
-                // 3. Extract the data and sort it newest-first
-                let fetchedOrders = [];
-                querySnapshot.forEach((doc) => {
-                    fetchedOrders.push({ id: doc.id, ...doc.data() });
-                });
-                
-                // Sort by timestamp (newest first)
-                fetchedOrders.sort((a, b) => b.timestamp - a.timestamp);
-
-                // 4. Render the UI
-                container.innerHTML = '';
-                fetchedOrders.forEach(order => {
-                    // Figure out what color to make the status badge
-                    let statusColor = "bg-stone-500";
-                    if(order.orderStatus === "Pending") statusColor = "bg-amber-500";
-                    if(order.orderStatus === "Preparing") statusColor = "bg-blue-500";
-                    if(order.orderStatus === "Delivered") statusColor = "bg-green-500";
-
-                    // Create a quick list of what they bought
-                    const itemsList = order.items.map(i => `${i.qty}x ${i.title}`).join(', ');
-
-                    container.innerHTML += `
-                        <div class="bg-[#2c1e16] border border-white/5 p-4 rounded-xl shadow-lg">
-                            <div class="flex justify-between items-start mb-3 border-b border-white/5 pb-3">
-                                <div>
-                                    <span class="text-[10px] text-stone-400 font-bold uppercase tracking-wider block mb-1">Order ID: ${order.id.slice(0, 8)}...</span>
-                                    <span class="text-lg font-extrabold text-white">${order.totalPrice}</span>
-                                </div>
-                                <span class="px-2.5 py-1 rounded-md text-[10px] font-bold text-white uppercase tracking-wider ${statusColor}">
-                                    ${order.orderStatus}
-                                </span>
-                            </div>
-                            <div class="text-sm text-stone-300 mb-2 font-medium">${itemsList}</div>
-                            <div class="text-xs text-stone-500 flex flex-col gap-1">
-                                <span>📅 ${order.deliveryDate} (${order.deliveryTime})</span>
-                                <span>📍 ${order.deliveryArea}</span>
-                            </div>
-                        </div>
-                    `;
-                });
-
-            } catch (error) {
-                console.error("Error fetching orders: ", error);
-                container.innerHTML = `<div class="text-center text-red-400 mt-10 font-bold">Failed to load orders. Please try again later.</div>`;
-            }
-        }
     </script>
 </body>
 

@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mombasa CTO - Staff Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1a110c;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #f59e0b;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+
+<body class="bg-[#1a110c] text-stone-200 min-h-screen flex flex-col">
+
+    <nav class="w-full bg-[#2c1e16] border-b border-white/10 px-6 py-4 flex justify-between items-center z-50">
+        <div class="flex items-center gap-2">
+            <div class="bg-amber-500/20 p-2 rounded-lg text-amber-500">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
+                    </path>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+            </div>
+            <span class="text-xl font-bold tracking-widest text-white">CTO<span
+                    class="text-amber-500">STAFF.</span></span>
+        </div>
+
+        <div id="staff-user-info" class="hidden items-center gap-4">
+            <span id="staff-email" class="text-sm font-semibold text-stone-400"></span>
+            <button onclick="handleStaffLogOut()"
+                class="bg-red-500/10 text-red-400 hover:bg-red-500/20 px-4 py-1.5 rounded-md text-sm font-bold transition">Log
+                Out</button>
+        </div>
+    </nav>
+
+    <div id="staff-login-section" class="flex-1 flex items-center justify-center p-6">
+        <div class="bg-[#2c1e16] border border-white/10 rounded-2xl p-8 w-full max-w-md shadow-2xl">
+            <h2 class="text-2xl font-extrabold text-white mb-2">Staff Portal Login</h2>
+            <p class="text-stone-400 text-sm mb-6">Authorized personnel only.</p>
+
+            <form id="staff-login-form" onsubmit="handleStaffLogin(event)" class="flex flex-col gap-4">
+                <div>
+                    <label class="text-[11px] text-stone-400 font-semibold uppercase tracking-wider mb-1 block">Staff
+                        Email</label>
+                    <input type="email" id="login-email" required
+                        class="w-full bg-black/40 text-stone-200 text-sm px-4 py-3 rounded-xl border border-white/5 focus:outline-none focus:border-amber-500">
+                </div>
+                <div>
+                    <label
+                        class="text-[11px] text-stone-400 font-semibold uppercase tracking-wider mb-1 block">Password</label>
+                    <input type="password" id="login-password" required
+                        class="w-full bg-black/40 text-stone-200 text-sm px-4 py-3 rounded-xl border border-white/5 focus:outline-none focus:border-amber-500">
+                </div>
+                <button type="submit"
+                    class="w-full mt-4 bg-amber-600 hover:bg-amber-500 text-white py-3 rounded-xl text-sm font-bold transition shadow-lg shadow-amber-900/40">Access
+                    Dashboard</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="staff-dashboard-section" class="hidden flex-1 flex flex-col p-6 lg:p-10 max-w-[1400px] mx-auto w-full">
+        <div class="flex gap-4 mb-6 border-b border-white/5 pb-4">
+            <button onclick="switchTab('kitchen')" id="tab-kitchen"
+                class="px-6 py-2 rounded-lg font-bold transition-all bg-amber-500 text-[#1a110c]">
+                👨‍🍳 Kitchen View
+            </button>
+            <button onclick="switchTab('rider')" id="tab-rider"
+                class="px-6 py-2 rounded-lg font-bold transition-all bg-white/5 text-stone-400 hover:text-white">
+                🛵 Rider View
+            </button>
+        </div>
+
+        <div id="kitchen-view-container" class="block">
+            <h1 class="text-3xl md:text-4xl font-extrabold text-white mb-6">Live Kitchen Feed</h1>
+            <div id="live-orders-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            </div>
+        </div>
+
+        <div id="rider-view-container" class="hidden">
+            <h1 class="text-3xl md:text-4xl font-extrabold text-white mb-6">Delivery Routes</h1>
+            <div id="rider-orders-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            </div>
+        </div>
+
+        <div id="live-orders-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        </div>
+    </div>
+    <script type="module">
+        // Import Firebase tools
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+        import { getFirestore, collection, query, orderBy, getDocs, doc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCrwuiHQVAAGpeyKswJ19TXzPyAwfaW8fU",
+            authDomain: "mombasa-cto.firebaseapp.com",
+            projectId: "mombasa-cto",
+            storageBucket: "mombasa-cto.firebasestorage.app",
+            messagingSenderId: "725798162014",
+            appId: "1:725798162014:web:476760e0d358c0b8b72ecf"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Expose to window so our HTML buttons can click them
+        window.auth = auth;
+        window.db = db;
+        window.collection = collection;
+        window.query = query;
+        window.orderBy = orderBy;
+        window.getDocs = getDocs;
+        window.doc = doc;
+        window.updateDoc = updateDoc;
+        window.onSnapshot = onSnapshot; // NEW: Expose the live listener
+
+        // UI Elements
+        const loginSection = document.getElementById('staff-login-section');
+        const dashboardSection = document.getElementById('staff-dashboard-section');
+        const staffUserInfo = document.getElementById('staff-user-info');
+        const staffEmailDisplay = document.getElementById('staff-email');
+
+        // ==========================================
+        // 1. THE OBSERVER (The Bouncer)
+        // ==========================================
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // They are logged in! Hide login, show dashboard.
+                loginSection.classList.add('hidden');
+                dashboardSection.classList.remove('hidden');
+                dashboardSection.classList.add('flex');
+
+                staffUserInfo.classList.remove('hidden');
+                staffUserInfo.classList.add('flex');
+                staffEmailDisplay.innerText = user.email;
+
+                // Automatically fetch the orders as soon as they log in
+                window.startOrderListener();
+            } else {
+                // Nobody is logged in. Show login, hide dashboard.
+                loginSection.classList.remove('hidden');
+                dashboardSection.classList.add('hidden');
+                dashboardSection.classList.remove('flex');
+
+                staffUserInfo.classList.add('hidden');
+                staffUserInfo.classList.remove('flex');
+            }
+        });
+
+        // ==========================================
+        // 2. STAFF LOGIN & LOGOUT
+        // ==========================================
+        window.handleStaffLogin = async function (event) {
+            event.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                // The observer will automatically handle the screen switch!
+            } catch (error) {
+                alert("Login failed. Check credentials or contact the owner. Error: " + error.message);
+            }
+        };
+
+        window.handleStaffLogOut = async function () {
+            try {
+                await signOut(auth);
+            } catch (error) {
+                console.error("Logout Error:", error);
+            }
+        };
+        // ==========================================
+        // UI: TAB SWITCHING
+        // ==========================================
+        window.switchTab = function (tabName) {
+            const kitchenContainer = document.getElementById('kitchen-view-container');
+            const riderContainer = document.getElementById('rider-view-container');
+            const tabKitchen = document.getElementById('tab-kitchen');
+            const tabRider = document.getElementById('tab-rider');
+
+            // Active Class (Amber Background, Dark Text)
+            const activeClass = "px-6 py-2 rounded-lg font-bold transition-all bg-amber-500 text-[#1a110c]";
+            // Inactive Class (Faded Background, Light Text)
+            const inactiveClass = "px-6 py-2 rounded-lg font-bold transition-all bg-white/5 text-stone-400 hover:text-white";
+
+            if (tabName === 'kitchen') {
+                kitchenContainer.classList.remove('hidden');
+                riderContainer.classList.add('hidden');
+                tabKitchen.className = activeClass;
+                tabRider.className = inactiveClass;
+            } else {
+                kitchenContainer.classList.add('hidden');
+                riderContainer.classList.remove('hidden');
+                tabRider.className = activeClass;
+                tabKitchen.className = inactiveClass;
+            }
+        };
+        // ==========================================
+        // 3. LISTEN FOR LIVE ORDERS (Dual-Feed)
+        // ==========================================
+        let orderListener = null;
+
+        window.startOrderListener = function () {
+            const kitchenGrid = document.getElementById('live-orders-grid');
+            const riderGrid = document.getElementById('rider-orders-grid');
+
+            kitchenGrid.innerHTML = `<div class="col-span-full text-center text-amber-500 font-bold animate-pulse py-10">Connecting...</div>`;
+            riderGrid.innerHTML = `<div class="col-span-full text-center text-amber-500 font-bold animate-pulse py-10">Connecting...</div>`;
+
+            try {
+                const q = window.query(window.collection(window.db, "orders"), window.orderBy("timestamp", "desc"));
+                if (orderListener) orderListener();
+
+                orderListener = window.onSnapshot(q, (querySnapshot) => {
+                    kitchenGrid.innerHTML = '';
+                    riderGrid.innerHTML = '';
+
+                    let kitchenCount = 0;
+                    let riderCount = 0;
+
+                    querySnapshot.forEach((documentSnapshot) => {
+                        const order = { id: documentSnapshot.id, ...documentSnapshot.data() };
+                        const itemsList = order.items.map(i => `<li class="text-sm text-stone-300">• ${i.qty}x ${i.title}</li>`).join('');
+                        const phoneDisplay = order.customerPhone ? order.customerPhone : "No Phone";
+
+                        // 1. Build the generic card HTML (without the button)
+                        let baseCard = `
+                            <div class="bg-[#2c1e16] border border-white/5 p-5 rounded-2xl shadow-xl flex flex-col transition-all duration-500 hover:border-white/10">
+                                <div class="flex justify-between items-start border-b border-white/10 pb-4 mb-4">
+                                    <div>
+                                        <span class="text-[10px] text-stone-400 font-bold uppercase tracking-wider block mb-1">ID: ${order.id.slice(0, 6)}</span>
+                                        <span class="text-sm text-stone-300">Total: <strong class="text-white">${order.totalPrice}</strong></span>
+                                    </div>
+                                    <span class="px-2.5 py-1 rounded-md text-[10px] font-bold text-white uppercase tracking-wider STATUS_COLOR">
+                                        ${order.orderStatus}
+                                    </span>
+                                </div>
+                                <div class="flex-1 mb-2">
+                                    <div class="text-xs text-stone-300 space-y-1.5 bg-black/20 p-3 rounded-xl border border-white/5 mb-4">
+                                        <p>👤 ${order.customerEmail}</p>
+                                        <p>📞 <a href="tel:${phoneDisplay}" class="text-amber-500 hover:underline">${phoneDisplay}</a></p>
+                                        <p>📍 ${order.deliveryArea} - ${order.deliveryDate} (${order.deliveryTime})</p>
+                                    </div>
+                                    <h3 class="text-[10px] text-amber-500 font-bold uppercase tracking-wider mb-2">Order Items</h3>
+                                    <ul class="space-y-1 mb-2 pl-1">${itemsList}</ul>
+                                </div>
+                                ACTION_BUTTON
+                            </div>`;
+
+                        // 2. Sort into KITCHEN or RIDER based on status
+                        if (order.orderStatus === "Pending") {
+                            kitchenCount++;
+                            kitchenGrid.innerHTML += baseCard
+                                .replace('STATUS_COLOR', 'bg-amber-500')
+                                .replace('ACTION_BUTTON', `<button onclick="updateOrderStatus('${order.id}', 'Preparing')" class="w-full mt-4 bg-amber-600 hover:bg-amber-500 text-white py-2.5 rounded-xl text-sm font-bold">Accept & Prepare</button>`);
+                        }
+                        else if (order.orderStatus === "Preparing") {
+                            kitchenCount++;
+                            kitchenGrid.innerHTML += baseCard
+                                .replace('STATUS_COLOR', 'bg-blue-500')
+                                .replace('ACTION_BUTTON', `<button onclick="updateOrderStatus('${order.id}', 'Ready for Delivery')" class="w-full mt-4 bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-xl text-sm font-bold">Food is Ready</button>`);
+                        }
+                        else if (order.orderStatus === "Ready for Delivery") {
+                            // Shows in BOTH! Kitchen knows it's waiting, Rider knows to pick it up.
+                            kitchenCount++;
+                            riderCount++;
+
+                            const waitingCard = baseCard.replace('STATUS_COLOR', 'bg-purple-500');
+                            kitchenGrid.innerHTML += waitingCard.replace('ACTION_BUTTON', `<div class="w-full mt-4 bg-black/20 text-stone-400 py-2.5 rounded-xl text-sm font-bold text-center border border-white/5">Waiting for Rider</div>`);
+                            riderGrid.innerHTML += waitingCard.replace('ACTION_BUTTON', `<button onclick="updateOrderStatus('${order.id}', 'Out for Delivery')" class="w-full mt-4 bg-purple-600 hover:bg-purple-500 text-white py-2.5 rounded-xl text-sm font-bold">Start Delivery Run</button>`);
+                        }
+                        else if (order.orderStatus === "Out for Delivery") {
+                            // Only Rider needs to see it now
+                            riderCount++;
+                            riderGrid.innerHTML += baseCard
+                                .replace('STATUS_COLOR', 'bg-orange-500')
+                                .replace('ACTION_BUTTON', `<button onclick="updateOrderStatus('${order.id}', 'Delivered')" class="w-full mt-4 bg-orange-600 hover:bg-orange-500 text-white py-2.5 rounded-xl text-sm font-bold">Mark as Delivered</button>`);
+                        }
+                    });
+
+                    if (kitchenCount === 0) kitchenGrid.innerHTML = `<div class="col-span-full text-center text-stone-500 py-10">No active kitchen orders.</div>`;
+                    if (riderCount === 0) riderGrid.innerHTML = `<div class="col-span-full text-center text-stone-500 py-10">No deliveries pending.</div>`;
+
+                }, (error) => {
+                    console.error("Live feed error: ", error);
+                });
+
+            } catch (error) {
+                console.error("Setup error: ", error);
+            }
+        };
+
+        // ==========================================
+        // 4. UPDATE ORDER STATUS (Chef Action)
+        // ==========================================
+        window.updateOrderStatus = async function (orderId, newStatus) {
+            try {
+                // Point directly to the specific order document
+                const orderRef = window.doc(window.db, "orders", orderId);
+
+                // Update the status field in Firebase
+                await window.updateDoc(orderRef, {
+                    orderStatus: newStatus
+                });
+
+                // NOTE: We completely removed the refresh function here!
+                // Firebase onSnapshot will automatically detect this update and redraw the screen.
+
+            } catch (error) {
+                console.error("Error updating status:", error);
+                alert("Failed to update order status. Please try again.");
+            }
+        };
+    </script>
+</body>
+
+</html>
