@@ -159,17 +159,17 @@
                         Up</button>
                 </div>
 
-                <div id="nav-logged-in" class="hidden items-center space-x-4 lg:space-x-5">
-                    <div class="flex flex-col items-end mr-1">
-                        <span class="text-[9px] text-stone-500 font-bold uppercase tracking-widest">Welcome</span>
-                        <span id="nav-user-name"
-                            class="text-xs font-bold text-amber-500 truncate max-w-[120px]">User</span>
+               <div id="nav-logged-in" class="hidden items-center space-x-4 lg:space-x-5">
+                    <div class="flex flex-col items-center justify-center mr-2">
+                        <span class="text-[9px] text-stone-500 font-bold uppercase tracking-widest mb-0.5">Welcome</span>
+                        <span id="nav-user-name" class="text-sm font-extrabold text-amber-500 truncate max-w-[150px]">User</span>
                     </div>
+                    
                     <button onclick="handleLogOut()"
-                        class="bg-white/5 hover:bg-red-500/20 text-stone-300 hover:text-red-400 border border-white/10 hover:border-red-500/30 px-5 py-2 rounded-full text-sm font-bold transition">Log
-                        Out</button>
+                        class="bg-white/5 hover:bg-red-500/20 text-stone-300 hover:text-red-400 border border-white/10 hover:border-red-500/30 px-5 py-2 rounded-full text-sm font-bold transition">
+                        Log Out
+                    </button>
                 </div>
-
                 <div class="hidden lg:block h-5 w-px bg-white/20 mx-1"></div>
 
                 <button onclick="openNav()" class="lg:hidden w-6 h-6 hover:text-amber-500 transition"><svg fill="none"
@@ -725,14 +725,16 @@
                     Up</button>
             </div>
 
-            <div id="mobile-logged-in" class="hidden flex-col gap-3">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-xs text-stone-500 font-bold uppercase tracking-widest">Welcome</span>
-                    <span id="mobile-user-name" class="text-lg font-bold text-amber-500 truncate">User</span>
+            <div id="mobile-logged-in" class="hidden flex-col gap-4 mt-2">
+                <div class="flex flex-col items-center justify-center">
+                    <span class="text-[10px] text-stone-400 font-bold uppercase tracking-widest mb-0.5">Welcome</span>
+                    <span id="mobile-user-name" class="text-xl font-extrabold text-amber-500 truncate">User</span>
                 </div>
+                
                 <button onclick="handleLogOut(); closeNav();"
-                    class="w-full py-3 rounded-xl border border-red-500/30 text-red-400 font-semibold hover:bg-red-500/10 transition">Log
-                    Out</button>
+                    class="w-full py-3 rounded-xl border border-red-500/30 text-red-400 font-semibold hover:bg-red-500/10 transition">
+                    Log Out
+                </button>
             </div>
 
         </div>
@@ -875,12 +877,13 @@
     <script type="module">
         // FIREBASE INITIALIZATION & AUTHENTICATION
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
-        import {
+      import {
             getAuth,
             createUserWithEmailAndPassword,
             signInWithEmailAndPassword,
             onAuthStateChanged,
-            signOut
+            signOut,
+            updateProfile // <--- ADD THIS HERE!
         } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
 
         // Import the Firestore Database tools PLUS the Search tools!
@@ -1039,7 +1042,8 @@
 
             if (user) {
                 // --- THE USER IS LOGGED IN ---
-                const username = user.email.split('@')[0];
+                // Look for their real name. If it doesn't exist yet, chop the email.
+                const username = user.displayName || user.email.split('@')[0];
 
                 if (loggedOutNav) loggedOutNav.classList.remove('lg:flex');
                 if (loggedInNav) loggedInNav.classList.add('lg:flex');
@@ -1087,40 +1091,54 @@
         };
 
         // ==========================================
-        // EXISTING SIGN UP / LOG IN LOGIC
+        // EXISTING SIGN UP / LOG IN LOGIC (UPGRADED)
         // ==========================================
-        window.handleAuthSubmit = function (event) {
+        // We added 'async' here so we can wait for Firebase to update the profile
+        window.handleAuthSubmit = async function (event) {
             event.preventDefault();
 
             const email = document.getElementById('auth-email').value;
             const password = document.getElementById('auth-password').value;
-            const submitBtn = document.getElementById('auth-submit-btn');
+            
+            // NEW: Try to find a name input field
+            const nameInput = document.getElementById('auth-name'); 
+            const fullName = nameInput ? nameInput.value : "";
 
+            const submitBtn = document.getElementById('auth-submit-btn');
             const isSignUpMode = submitBtn.innerText.trim().toLowerCase() === 'create account';
 
             if (!email || !password) {
-                alert("Please fill in all fields.");
+                alert("Please fill in all required fields.");
                 return;
             }
 
             if (isSignUpMode) {
-                createUserWithEmailAndPassword(auth, email, password)
-                    .then((userCredential) => {
-                        alert("Account created successfully! Welcome aboard.");
-                        if (typeof closeAuth === 'function') closeAuth();
-                    })
-                    .catch((error) => {
-                        alert("Sign Up Error: " + error.message);
-                    });
+                // --- SIGN UP LOGIC ---
+                try {
+                    // 1. Create the account
+                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                    const user = userCredential.user;
+
+                    // 2. Attach their name to the profile (if they typed one)
+                    if (fullName) {
+                        await updateProfile(user, { displayName: fullName });
+                    }
+
+                    alert("Account created successfully! Welcome aboard.");
+                    if (typeof closeAuth === 'function') closeAuth();
+                    
+                } catch (error) {
+                    alert("Sign Up Error: " + error.message);
+                }
             } else {
-                signInWithEmailAndPassword(auth, email, password)
-                    .then((userCredential) => {
-                        alert("Welcome back!");
-                        if (typeof closeAuth === 'function') closeAuth();
-                    })
-                    .catch((error) => {
-                        alert("Log In Error: " + error.message);
-                    });
+                // --- LOG IN LOGIC ---
+                try {
+                    await signInWithEmailAndPassword(auth, email, password);
+                    alert("Welcome back!");
+                    if (typeof closeAuth === 'function') closeAuth();
+                } catch (error) {
+                    alert("Log In Error: " + error.message);
+                }
             }
         };
     </script>
@@ -1320,9 +1338,9 @@
                 void mainImg.offsetWidth; mainImg.style.transition = "all 0.7s cubic-bezier(0.25, 1, 0.5, 1)"; mainImg.style.transform = "translateX(0) scale(1) rotate(0deg)"; mainImg.style.opacity = "1";
             }, 400);
             setTimeout(() => {
-                document.getElementById('tagline').innerText = dish.tag;
-                document.getElementById('title-top').innerText = dish.topTitle;
-                document.getElementById('title-bottom').innerText = dish.bottomTitle;
+                ('tagline').innerText = dish.tag;
+                ('title-top').innerText = dish.topTitle;
+                ('title-bottom').innerText = dish.bottomTitle;
                 document.getElementById('chef-name').innerText = dish.chef;
                 document.getElementById('teaser-text').innerText = dish.teaser;
 
