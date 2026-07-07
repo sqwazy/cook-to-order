@@ -29,9 +29,10 @@
 
 <body class="bg-[#1a110c] text-stone-200 min-h-screen flex flex-col">
 
-    <nav class="w-full bg-[#2c1e16] border-b border-white/10 px-6 py-4 flex justify-between items-center z-50">
+<nav class="w-full bg-[#1a1311] border-b border-white/5 p-4 md:px-8 flex justify-between items-center gap-4 z-50">
+        
         <div class="flex items-center gap-2">
-            <div class="bg-amber-500/20 p-2 rounded-lg text-amber-500">
+            <div class="bg-amber-500/20 p-2 rounded-xl text-amber-500 border border-amber-500/30">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round"
                         d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
@@ -39,16 +40,22 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                 </svg>
             </div>
-            <span class="text-xl font-bold tracking-widest text-white">CTO<span
-                    class="text-amber-500">STAFF.</span></span>
+            <h1 class="text-lg md:text-2xl font-black text-white tracking-widest">
+                CTO<span class="text-amber-500">STAFF.</span>
+            </h1>
         </div>
 
-        <div id="staff-user-info" class="hidden items-center gap-4">
-            <span id="staff-email" class="text-sm font-semibold text-stone-400"></span>
-            <button onclick="handleStaffLogOut()"
-                class="bg-red-500/10 text-red-400 hover:bg-red-500/20 px-4 py-1.5 rounded-md text-sm font-bold transition">Log
-                Out</button>
+        <div id="staff-user-info" class="hidden items-center gap-3 md:gap-5 bg-black/40 px-4 py-2.5 rounded-2xl border border-white/5 shadow-inner">
+            <div class="flex flex-col items-end">
+                <span class="text-[9px] text-stone-500 font-bold uppercase tracking-widest">Admin</span>
+                <span id="admin-user-name" class="text-xs md:text-sm font-bold text-amber-500 truncate max-w-[100px] md:max-w-[150px]">Loading...</span>
+            </div>
+            
+            <div class="w-px h-6 bg-white/10 hidden md:block"></div> <button onclick="handleStaffLogOut()" class="text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 px-3 md:px-4 py-1.5 md:py-2 rounded-xl text-xs md:text-sm font-bold transition border border-red-500/20">
+                Log Out
+            </button>
         </div>
+        
     </nav>
 
     <div id="staff-login-section" class="flex-1 flex items-center justify-center p-6">
@@ -137,7 +144,7 @@
         const loginSection = document.getElementById('staff-login-section');
         const dashboardSection = document.getElementById('staff-dashboard-section');
         const staffUserInfo = document.getElementById('staff-user-info');
-        const staffEmailDisplay = document.getElementById('staff-email');
+        
 
         // ==========================================
         // 1. THE OBSERVER (The Bouncer)
@@ -151,7 +158,10 @@
 
                 staffUserInfo.classList.remove('hidden');
                 staffUserInfo.classList.add('flex');
-                staffEmailDisplay.innerText = user.email;
+
+                // --- THE NEW NAME UPDATE LOGIC ---
+                const adminName = user.displayName || user.email.split('@')[0];
+                document.getElementById('admin-user-name').innerText = adminName;
 
                 // Automatically fetch the orders as soon as they log in
                 window.startOrderListener();
