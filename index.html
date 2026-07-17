@@ -159,12 +159,14 @@
                         Up</button>
                 </div>
 
-               <div id="nav-logged-in" class="hidden items-center space-x-4 lg:space-x-5">
+                <div id="nav-logged-in" class="hidden items-center space-x-4 lg:space-x-5">
                     <div class="flex flex-col items-center justify-center mr-2">
-                        <span class="text-[9px] text-stone-500 font-bold uppercase tracking-widest mb-0.5">Welcome</span>
-                        <span id="nav-user-name" class="text-sm font-extrabold text-amber-500 truncate max-w-[150px]">User</span>
+                        <span
+                            class="text-[9px] text-stone-500 font-bold uppercase tracking-widest mb-0.5">Welcome</span>
+                        <span id="nav-user-name"
+                            class="text-sm font-extrabold text-amber-500 truncate max-w-[150px]">User</span>
                     </div>
-                    
+
                     <button onclick="handleLogOut()"
                         class="bg-white/5 hover:bg-red-500/20 text-stone-300 hover:text-red-400 border border-white/10 hover:border-red-500/30 px-5 py-2 rounded-full text-sm font-bold transition">
                         Log Out
@@ -730,7 +732,7 @@
                     <span class="text-[10px] text-stone-400 font-bold uppercase tracking-widest mb-0.5">Welcome</span>
                     <span id="mobile-user-name" class="text-xl font-extrabold text-amber-500 truncate">User</span>
                 </div>
-                
+
                 <button onclick="handleLogOut(); closeNav();"
                     class="w-full py-3 rounded-xl border border-red-500/30 text-red-400 font-semibold hover:bg-red-500/10 transition">
                     Log Out
@@ -877,7 +879,7 @@
     <script type="module">
         // FIREBASE INITIALIZATION & AUTHENTICATION
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
-      import {
+        import {
             getAuth,
             createUserWithEmailAndPassword,
             signInWithEmailAndPassword,
@@ -1099,9 +1101,9 @@
 
             const email = document.getElementById('auth-email').value;
             const password = document.getElementById('auth-password').value;
-            
+
             // NEW: Try to find a name input field
-            const nameInput = document.getElementById('auth-name'); 
+            const nameInput = document.getElementById('auth-name');
             const fullName = nameInput ? nameInput.value : "";
 
             const submitBtn = document.getElementById('auth-submit-btn');
@@ -1126,7 +1128,7 @@
 
                     alert("Account created successfully! Welcome aboard.");
                     if (typeof closeAuth === 'function') closeAuth();
-                    
+
                 } catch (error) {
                     alert("Sign Up Error: " + error.message);
                 }
@@ -1282,28 +1284,32 @@
                 teaser: "Aromatic basmati rice slow-cooked with tender marinated beef, rich coastal spices, and thick yogurt gravy.",
                 image: "https://images.unsplash.com/photo-1631515243349-e0cb75fb8d3a?q=80&w=600&auto=format&fit=crop",
                 bio: "Chef Ali learned the art of perfect Biriani from his grandmother. He specializes in slow-cooked, deeply spiced traditional Swahili meals made entirely from scratch.",
-                phone: "+254700000001", rawPrice: 850
+                phone: "+254700000001", rawPrice: 850,
+                ownerEmail: "ali@test.com" // <--- Added
             },
             {
                 tag: "#2 Most loved dish", topTitle: "CRISPY", bottomTitle: "VIAZI KARAI", chef: "Chef Amina", likes: 289, isLiked: false, category: "Street Food",
                 teaser: "Golden, crispy fried potatoes coated in a vibrant turmeric and tamarind batter. The ultimate street delicacy.",
                 image: "https://images.unsplash.com/photo-1541529086526-db283c563270?q=80&w=600&auto=format&fit=crop",
                 bio: "Famous for her secret tamarind dip, Chef Amina has been perfecting Mombasa street food for over a decade. Her Viazi Karai is always fried fresh to order.",
-                phone: "+254700000002", rawPrice: 250
+                phone: "+254700000002", rawPrice: 250,
+                ownerEmail: "amina@test.com" // <--- Added
             },
             {
                 tag: "#3 Most loved dish", topTitle: "COASTAL", bottomTitle: "MABUYU", chef: "Mama Fatma", likes: 215, isLiked: false, category: "Sweet Treats",
                 teaser: "Sweet, tangy baobab seeds coated in a rich, spiced red syrup. A nostalgic Mombasa classic.",
                 image: "https://images.unsplash.com/photo-1515003197210-e0cd71810b5f?q=80&w=600&auto=format&fit=crop",
                 bio: "Mama Fatma’s Mabuyu is legendary. She sources the freshest baobab seeds and coats them in a perfectly balanced sweet and spicy syrup that keeps locals coming back.",
-                phone: "+254700000003", rawPrice: 150
+                phone: "+254700000003", rawPrice: 150,
+                ownerEmail: "fatma@test.com" // <--- Added
             },
             {
                 tag: "#4 Most loved dish", topTitle: "ARTISANAL", bottomTitle: "SPICED CAKE", chef: "Chef Swalah", likes: 142, isLiked: false, category: "Sweet Treats",
                 teaser: "Slow-baked with coastal cardamom, fermented for that perfect balance. Finished with a light honey glaze.",
                 image: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?q=80&w=600&auto=format&fit=crop",
                 bio: "Chef Swalah brings a modern twist to traditional coastal baking. He infuses high-quality ingredients with local spices like cardamom and cinnamon for unforgettable pastries.",
-                phone: "+254700000004", rawPrice: 1500
+                phone: "+254700000004", rawPrice: 1500,
+                ownerEmail: "swalah@test.com" // <--- Added
             }
         ];
 
@@ -1338,9 +1344,9 @@
                 void mainImg.offsetWidth; mainImg.style.transition = "all 0.7s cubic-bezier(0.25, 1, 0.5, 1)"; mainImg.style.transform = "translateX(0) scale(1) rotate(0deg)"; mainImg.style.opacity = "1";
             }, 400);
             setTimeout(() => {
-                ('tagline').innerText = dish.tag;
-                ('title-top').innerText = dish.topTitle;
-                ('title-bottom').innerText = dish.bottomTitle;
+                document.getElementById('tagline').innerText = dish.tag;
+                document.getElementById('title-top').innerText = dish.topTitle;
+                document.getElementById('title-bottom').innerText = dish.bottomTitle;
                 document.getElementById('chef-name').innerText = dish.chef;
                 document.getElementById('teaser-text').innerText = dish.teaser;
 
@@ -1426,10 +1432,24 @@
         function addToCart() {
             const dish = topDishes[currentOrderIndex];
             let existingItem = cart.find(item => item.id === currentOrderIndex);
-            if (existingItem) existingItem.qty += currentQty;
-            else cart.push({ id: currentOrderIndex, title: dish.topTitle + (dish.bottomTitle ? " " + dish.bottomTitle : ""), chef: dish.chef, price: dish.rawPrice, qty: currentQty, image: dish.image });
+            
+            if (existingItem) {
+                existingItem.qty += currentQty;
+            } else {
+                cart.push({ 
+                    id: currentOrderIndex, 
+                    title: dish.topTitle + (dish.bottomTitle ? " " + dish.bottomTitle : ""), 
+                    chef: dish.chef, 
+                    ownerEmail: dish.ownerEmail, // <--- THE NEW SECRET TAG!
+                    price: dish.rawPrice, 
+                    qty: currentQty, 
+                    image: dish.image 
+                });
+            }
 
-            updateCartBadge(); closeOrderModal(); renderCart();
+            updateCartBadge(); 
+            closeOrderModal(); 
+            renderCart();
         }
 
         function updateCartBadge() {
@@ -1590,7 +1610,10 @@
             const deliveryPhone = document.getElementById('delivery-phone').value;
             const deliveryArea = document.getElementById('delivery-selected-text').innerText;
             const paymentMethod = document.getElementById('payment-selected-text').innerText;
-            const grandTotal = document.getElementById('cart-total-price').innerText;
+            const grandTotalText = document.getElementById('cart-total-price').innerText;
+            
+            // This uses Regex to delete everything that IS NOT a number, then converts it to an integer
+            const grandTotalNumber = parseInt(grandTotalText.replace(/[^0-9]/g, ''), 10);
 
             // --- UX POINT 2: PHONE VALIDATION ---
             // Remove any accidental spaces the user typed
@@ -1631,7 +1654,7 @@
                 deliveryTime: deliveryPreference,
                 deliveryArea: deliveryArea,
                 paymentMethod: paymentMethod,
-                totalPrice: grandTotal,
+                totalPrice: grandTotalNumber, // <--- FIXED: Now sending the pure integer!
                 orderStatus: "Pending",
                 timestamp: window.serverTimestamp()
             };
@@ -1658,7 +1681,6 @@
                 }
             }
         }
-
         // ==========================================
         // NEW: MOBILE NAV DRAWER LOGIC
         // ==========================================

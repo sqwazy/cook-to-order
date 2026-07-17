@@ -29,8 +29,8 @@
 
 <body class="bg-[#1a110c] text-stone-200 min-h-screen flex flex-col">
 
-<nav class="w-full bg-[#1a1311] border-b border-white/5 p-4 md:px-8 flex justify-between items-center gap-4 z-50">
-        
+    <nav class="w-full bg-[#1a1311] border-b border-white/5 p-4 md:px-8 flex justify-between items-center gap-4 z-50">
+
         <div class="flex items-center gap-2">
             <div class="bg-amber-500/20 p-2 rounded-xl text-amber-500 border border-amber-500/30">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -45,17 +45,20 @@
             </h1>
         </div>
 
-        <div id="staff-user-info" class="hidden items-center gap-3 md:gap-5 bg-black/40 px-4 py-2.5 rounded-2xl border border-white/5 shadow-inner">
+        <div id="staff-user-info"
+            class="hidden items-center gap-3 md:gap-5 bg-black/40 px-4 py-2.5 rounded-2xl border border-white/5 shadow-inner">
             <div class="flex flex-col items-end">
                 <span class="text-[9px] text-stone-500 font-bold uppercase tracking-widest">Admin</span>
-                <span id="admin-user-name" class="text-xs md:text-sm font-bold text-amber-500 truncate max-w-[100px] md:max-w-[150px]">Loading...</span>
+                <span id="admin-user-name"
+                    class="text-xs md:text-sm font-bold text-amber-500 truncate max-w-[100px] md:max-w-[150px]">Loading...</span>
             </div>
-            
-            <div class="w-px h-6 bg-white/10 hidden md:block"></div> <button onclick="handleStaffLogOut()" class="text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 px-3 md:px-4 py-1.5 md:py-2 rounded-xl text-xs md:text-sm font-bold transition border border-red-500/20">
+
+            <div class="w-px h-6 bg-white/10 hidden md:block"></div> <button onclick="handleStaffLogOut()"
+                class="text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 px-3 md:px-4 py-1.5 md:py-2 rounded-xl text-xs md:text-sm font-bold transition border border-red-500/20">
                 Log Out
             </button>
         </div>
-        
+
     </nav>
 
     <div id="staff-login-section" class="flex-1 flex items-center justify-center p-6">
@@ -98,24 +101,21 @@
         <div id="kitchen-view-container" class="block">
             <h1 class="text-3xl md:text-4xl font-extrabold text-white mb-6">Live Kitchen Feed</h1>
             <div id="live-orders-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            </div>
+                </div>
         </div>
 
         <div id="rider-view-container" class="hidden">
             <h1 class="text-3xl md:text-4xl font-extrabold text-white mb-6">Delivery Routes</h1>
             <div id="rider-orders-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            </div>
-        </div>
-
-        <div id="live-orders-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                 </div>
         </div>
     </div>
     <script type="module">
         // Import Firebase tools
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
-        import { getFirestore, collection, query, orderBy, getDocs, doc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
-
+        import { getFirestore, collection, query, orderBy, onSnapshot, updateDoc, doc, getDoc, getDocs, limit } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+        
         const firebaseConfig = {
             apiKey: "AIzaSyCrwuiHQVAAGpeyKswJ19TXzPyAwfaW8fU",
             authDomain: "mombasa-cto.firebaseapp.com",
@@ -135,38 +135,76 @@
         window.collection = collection;
         window.query = query;
         window.orderBy = orderBy;
-        window.getDocs = getDocs;
+        window.getDocs = getDocs; // <--- This will now work perfectly!
         window.doc = doc;
         window.updateDoc = updateDoc;
-        window.onSnapshot = onSnapshot; // NEW: Expose the live listener
+        window.onSnapshot = onSnapshot; 
+        window.limit = limit;
 
         // UI Elements
         const loginSection = document.getElementById('staff-login-section');
         const dashboardSection = document.getElementById('staff-dashboard-section');
         const staffUserInfo = document.getElementById('staff-user-info');
-        
 
+        // --- XSS SANITIZER (Stops hackers from injecting malicious code into orders) ---
+        function sanitize(str) {
+            if (!str) return '';
+            const temp = document.createElement('div');
+            temp.textContent = str;
+            return temp.innerHTML;
+        }
+       // ==========================================
+        // 1. THE OBSERVER (The VIP Bouncer)
         // ==========================================
-        // 1. THE OBSERVER (The Bouncer)
-        // ==========================================
-        onAuthStateChanged(auth, (user) => {
+        onAuthStateChanged(auth, async (user) => {
             if (user) {
-                // They are logged in! Hide login, show dashboard.
-                loginSection.classList.add('hidden');
-                dashboardSection.classList.remove('hidden');
-                dashboardSection.classList.add('flex');
+                try {
+                    // CHECK THE VIP LIST
+                    const userRef = doc(db, "users", user.email.toLowerCase());
+                    const userSnap = await getDoc(userRef);
 
-                staffUserInfo.classList.remove('hidden');
-                staffUserInfo.classList.add('flex');
+                    if (userSnap.exists()) {
+                        const userData = userSnap.data();
+                        const userRole = userData.role; // "admin" or "chef"
 
-                // --- THE NEW NAME UPDATE LOGIC ---
-                const adminName = user.displayName || user.email.split('@')[0];
-                document.getElementById('admin-user-name').innerText = adminName;
+                        // Save this globally
+                        window.currentUserRole = userRole;
+                        window.currentStaffEmail = user.email;
 
-                // Automatically fetch the orders as soon as they log in
-                window.startOrderListener();
+                        // Show the dashboard
+                        loginSection.classList.add('hidden');
+                        dashboardSection.classList.remove('hidden');
+                        dashboardSection.classList.add('flex');
+
+                        staffUserInfo.classList.remove('hidden');
+                        staffUserInfo.classList.add('flex');
+                        
+                        // Update header name
+                        const adminName = user.displayName || user.email.split('@')[0];
+                        document.getElementById('admin-user-name').innerText = `${adminName} (${userRole.toUpperCase()})`;
+
+                        // --- NEW: UI ROLE RESTRICTIONS ---
+                        const riderTab = document.getElementById('tab-rider');
+                        if (userRole === "chef") {
+                            // Hide the Rider tab completely for chefs
+                            riderTab.classList.add('hidden');
+                        } else {
+                            // Show it for Admins (and future Riders)
+                            riderTab.classList.remove('hidden');
+                        }
+                        // ---------------------------------
+
+                        // Start fetching orders
+                        window.startOrderListener();
+                    } else {
+                        await signOut(auth);
+                        alert("Access Denied: You do not have staff permissions to view this portal.");
+                    }
+                } catch (error) {
+                    console.error("Security verification failed:", error);
+                    alert("Error verifying permissions. Please contact the CTO.");
+                }
             } else {
-                // Nobody is logged in. Show login, hide dashboard.
                 loginSection.classList.remove('hidden');
                 dashboardSection.classList.add('hidden');
                 dashboardSection.classList.remove('flex');
@@ -226,7 +264,7 @@
             }
         };
         // ==========================================
-        // 3. LISTEN FOR LIVE ORDERS (Dual-Feed)
+        // 3. LISTEN FOR LIVE ORDERS (Dual-Feed with Roles)
         // ==========================================
         let orderListener = null;
 
@@ -238,7 +276,7 @@
             riderGrid.innerHTML = `<div class="col-span-full text-center text-amber-500 font-bold animate-pulse py-10">Connecting...</div>`;
 
             try {
-                const q = window.query(window.collection(window.db, "orders"), window.orderBy("timestamp", "desc"));
+                const q = window.query(window.collection(window.db, "orders"), window.orderBy("timestamp", "desc"), window.limit(50));
                 if (orderListener) orderListener();
 
                 orderListener = window.onSnapshot(q, (querySnapshot) => {
@@ -249,27 +287,53 @@
                     let riderCount = 0;
 
                     querySnapshot.forEach((documentSnapshot) => {
-                        const order = { id: documentSnapshot.id, ...documentSnapshot.data() };
-                        const itemsList = order.items.map(i => `<li class="text-sm text-stone-300">• ${i.qty}x ${i.title}</li>`).join('');
-                        const phoneDisplay = order.customerPhone ? order.customerPhone : "No Phone";
+                        const rawOrder = { id: documentSnapshot.id, ...documentSnapshot.data() };
+                        
+                        // --- 1. THE CHEF FILTER ---
+                        let myItems = rawOrder.items;
 
-                        // 1. Build the generic card HTML (without the button)
+                        if (window.currentUserRole === "chef") {
+                            // Filter the cart to ONLY include items tagged with this chef's email
+                            myItems = rawOrder.items.filter(item => item.ownerEmail === window.currentStaffEmail);
+                            
+                            // If this order has NONE of their food, skip this order entirely!
+                            if (myItems.length === 0) return; 
+                        }
+
+                        // --- 2. THE PRICE RECALCULATOR ---
+                        let displayTotal = rawOrder.totalPrice;
+                        if (window.currentUserRole === "chef") {
+                            // Calculate total ONLY for the items this specific chef is cooking
+                            displayTotal = myItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
+                        }
+
+                        // --- 3. XSS SANITIZER ---
+                        const safeEmail = sanitize(rawOrder.customerEmail);
+                        const safePhone = sanitize(rawOrder.customerPhone || "No Phone");
+                        const safeArea = sanitize(rawOrder.deliveryArea);
+                        const safeDate = sanitize(rawOrder.deliveryDate);
+                        const safeTime = sanitize(rawOrder.deliveryTime);
+
+                        // Build the items list using myItems, NOT the raw cart!
+                        const itemsList = myItems.map(i => `<li class="text-sm text-stone-300">• ${i.qty}x ${i.title}</li>`).join('');
+
+                        // Build the generic card HTML
                         let baseCard = `
                             <div class="bg-[#2c1e16] border border-white/5 p-5 rounded-2xl shadow-xl flex flex-col transition-all duration-500 hover:border-white/10">
                                 <div class="flex justify-between items-start border-b border-white/10 pb-4 mb-4">
                                     <div>
-                                        <span class="text-[10px] text-stone-400 font-bold uppercase tracking-wider block mb-1">ID: ${order.id.slice(0, 6)}</span>
-                                        <span class="text-sm text-stone-300">Total: <strong class="text-white">${order.totalPrice}</strong></span>
+                                        <span class="text-[10px] text-stone-400 font-bold uppercase tracking-wider block mb-1">ID: ${rawOrder.id.slice(0, 6)}</span>
+                                        <span class="text-sm text-stone-300">Total: <strong class="text-white">Ksh ${displayTotal}</strong></span>
                                     </div>
                                     <span class="px-2.5 py-1 rounded-md text-[10px] font-bold text-white uppercase tracking-wider STATUS_COLOR">
-                                        ${order.orderStatus}
+                                        ${rawOrder.orderStatus}
                                     </span>
                                 </div>
                                 <div class="flex-1 mb-2">
                                     <div class="text-xs text-stone-300 space-y-1.5 bg-black/20 p-3 rounded-xl border border-white/5 mb-4">
-                                        <p>👤 ${order.customerEmail}</p>
-                                        <p>📞 <a href="tel:${phoneDisplay}" class="text-amber-500 hover:underline">${phoneDisplay}</a></p>
-                                        <p>📍 ${order.deliveryArea} - ${order.deliveryDate} (${order.deliveryTime})</p>
+                                        <p>👤 ${safeEmail}</p>
+                                        <p>📞 <a href="tel:${safePhone}" class="text-amber-500 hover:underline">${safePhone}</a></p>
+                                        <p>📍 ${safeArea} - ${safeDate} (${safeTime})</p>
                                     </div>
                                     <h3 class="text-[10px] text-amber-500 font-bold uppercase tracking-wider mb-2">Order Items</h3>
                                     <ul class="space-y-1 mb-2 pl-1">${itemsList}</ul>
@@ -277,34 +341,34 @@
                                 ACTION_BUTTON
                             </div>`;
 
-                        // 2. Sort into KITCHEN or RIDER based on status
-                        if (order.orderStatus === "Pending") {
+                        // Sort into KITCHEN or RIDER based on status
+                        if (rawOrder.orderStatus === "Pending") {
                             kitchenCount++;
                             kitchenGrid.innerHTML += baseCard
                                 .replace('STATUS_COLOR', 'bg-amber-500')
-                                .replace('ACTION_BUTTON', `<button onclick="updateOrderStatus('${order.id}', 'Preparing')" class="w-full mt-4 bg-amber-600 hover:bg-amber-500 text-white py-2.5 rounded-xl text-sm font-bold">Accept & Prepare</button>`);
+                                .replace('ACTION_BUTTON', `<button onclick="updateOrderStatus('${rawOrder.id}', 'Preparing')" class="w-full mt-4 bg-amber-600 hover:bg-amber-500 text-white py-2.5 rounded-xl text-sm font-bold">Accept & Prepare</button>`);
                         }
-                        else if (order.orderStatus === "Preparing") {
+                        else if (rawOrder.orderStatus === "Preparing") {
                             kitchenCount++;
                             kitchenGrid.innerHTML += baseCard
                                 .replace('STATUS_COLOR', 'bg-blue-500')
-                                .replace('ACTION_BUTTON', `<button onclick="updateOrderStatus('${order.id}', 'Ready for Delivery')" class="w-full mt-4 bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-xl text-sm font-bold">Food is Ready</button>`);
+                                .replace('ACTION_BUTTON', `<button onclick="updateOrderStatus('${rawOrder.id}', 'Ready for Delivery')" class="w-full mt-4 bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-xl text-sm font-bold">Food is Ready</button>`);
                         }
-                        else if (order.orderStatus === "Ready for Delivery") {
+                        else if (rawOrder.orderStatus === "Ready for Delivery") {
                             // Shows in BOTH! Kitchen knows it's waiting, Rider knows to pick it up.
                             kitchenCount++;
                             riderCount++;
 
                             const waitingCard = baseCard.replace('STATUS_COLOR', 'bg-purple-500');
                             kitchenGrid.innerHTML += waitingCard.replace('ACTION_BUTTON', `<div class="w-full mt-4 bg-black/20 text-stone-400 py-2.5 rounded-xl text-sm font-bold text-center border border-white/5">Waiting for Rider</div>`);
-                            riderGrid.innerHTML += waitingCard.replace('ACTION_BUTTON', `<button onclick="updateOrderStatus('${order.id}', 'Out for Delivery')" class="w-full mt-4 bg-purple-600 hover:bg-purple-500 text-white py-2.5 rounded-xl text-sm font-bold">Start Delivery Run</button>`);
+                            riderGrid.innerHTML += waitingCard.replace('ACTION_BUTTON', `<button onclick="updateOrderStatus('${rawOrder.id}', 'Out for Delivery')" class="w-full mt-4 bg-purple-600 hover:bg-purple-500 text-white py-2.5 rounded-xl text-sm font-bold">Start Delivery Run</button>`);
                         }
-                        else if (order.orderStatus === "Out for Delivery") {
+                        else if (rawOrder.orderStatus === "Out for Delivery") {
                             // Only Rider needs to see it now
                             riderCount++;
                             riderGrid.innerHTML += baseCard
                                 .replace('STATUS_COLOR', 'bg-orange-500')
-                                .replace('ACTION_BUTTON', `<button onclick="updateOrderStatus('${order.id}', 'Delivered')" class="w-full mt-4 bg-orange-600 hover:bg-orange-500 text-white py-2.5 rounded-xl text-sm font-bold">Mark as Delivered</button>`);
+                                .replace('ACTION_BUTTON', `<button onclick="updateOrderStatus('${rawOrder.id}', 'Delivered')" class="w-full mt-4 bg-orange-600 hover:bg-orange-500 text-white py-2.5 rounded-xl text-sm font-bold">Mark as Delivered</button>`);
                         }
                     });
 
