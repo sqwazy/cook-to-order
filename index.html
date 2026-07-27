@@ -558,28 +558,51 @@
             <div id="cart-items-container" class="flex flex-col gap-3 mb-6 border-b border-white/5 pb-6"></div>
 
             <div class="p-6 bg-[#2c1e16] border-t border-white/5">
+
+                <!-- 1. PHONE NUMBER -->
                 <div class="mb-4">
                     <p class="text-xs text-stone-400 font-semibold uppercase tracking-wider mb-2">Phone Number</p>
                     <input type="tel" id="delivery-phone" placeholder="e.g., 0712 345 678" required
                         class="w-full bg-black/40 text-stone-200 text-sm px-4 py-3 rounded-xl border border-white/5 focus:outline-none focus:border-amber-500 transition-colors">
                 </div>
+
+                <!-- 2. DATE & TIME (Smart Custom UI) -->
                 <div class="mb-4">
                     <p class="text-xs text-stone-400 font-semibold uppercase tracking-wider mb-2">Delivery Date</p>
-                    <input type="date" id="delivery-date" onchange="validateDeliveryTime()"
-                        class="w-full bg-black/40 text-stone-200 text-sm px-4 py-3 rounded-xl border border-white/5 focus:outline-none focus:border-amber-500 transition-colors">
-                </div>
 
-                <div class="mb-6">
-                    <div class="flex bg-black/40 p-1 rounded-xl border border-white/5 relative">
-                        <button id="toggle-morning" onclick="setDeliveryTime('Morning')"
-                            class="flex-1 py-2 text-sm font-bold text-white bg-amber-600 rounded-lg shadow-md transition-all z-10">Morning</button>
-                        <button id="toggle-evening" onclick="setDeliveryTime('Evening')"
-                            class="flex-1 py-2 text-sm font-bold text-stone-400 hover:text-stone-200 transition-all z-10">Evening</button>
+                    <!-- Custom Date Dropdown -->
+                    <div class="relative mb-4">
+                        <div onclick="toggleDateDropdown()" id="date-dropdown-btn"
+                            class="w-full flex items-center justify-between bg-black/40 text-stone-300 text-sm px-4 py-3.5 rounded-xl border border-white/5 hover:border-amber-500 transition-colors cursor-pointer">
+                            <span id="date-selected-text">Calculating...</span>
+                            <svg class="w-4 h-4 text-stone-400" fill="none" stroke="currentColor" stroke-width="2"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </div>
+
+                        <ul id="date-options-list"
+                            class="hidden absolute top-full left-0 w-full mt-2 bg-[#1a110c] border border-white/10 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] overflow-hidden z-[110]">
+                            <!-- JavaScript will populate this automatically -->
+                        </ul>
+                        <input type="hidden" id="delivery-date" value="">
                     </div>
+
+                    <p class="text-xs text-stone-400 font-semibold uppercase tracking-wider mb-2">Delivery Time</p>
+                    <!-- Custom Time Toggles -->
+                    <div class="flex bg-black/40 p-1 rounded-xl border border-white/5 relative">
+                        <button id="toggle-morning" onclick="window.setDeliveryTime('Morning')"
+                            class="flex-1 py-2 text-sm font-bold transition-all rounded-lg z-10">Morning</button>
+                        <button id="toggle-evening" onclick="window.setDeliveryTime('Evening')"
+                            class="flex-1 py-2 text-sm font-bold transition-all rounded-lg z-10">Evening</button>
+                    </div>
+                    <input type="hidden" id="delivery-time" value="Evening">
                 </div>
 
+                <!-- 3. DELIVERY AREA (Added Required Asterisk) -->
                 <div class="mb-4 relative">
-                    <p class="text-xs text-stone-400 font-semibold uppercase tracking-wider mb-2">Delivery Area</p>
+                    <p class="text-xs text-stone-400 font-semibold uppercase tracking-wider mb-2">Delivery Area <span
+                            class="text-red-500">*</span></p>
 
                     <div onclick="toggleDeliveryDropdown()" id="delivery-dropdown-btn"
                         class="w-full flex items-center justify-between bg-black/40 text-stone-400 text-sm px-4 py-3.5 rounded-xl border border-white/5 hover:border-amber-500 transition-colors cursor-pointer">
@@ -612,6 +635,16 @@
                     <input type="hidden" id="delivery-area" value="0">
                 </div>
 
+                <!-- 4. SPECIFIC LOCATION / NOTES (New Textarea) -->
+                <div class="mb-4">
+                    <p class="text-xs text-stone-400 font-semibold uppercase tracking-wider mb-2">Specific Location /
+                        Notes</p>
+                    <textarea id="delivery-notes" rows="2"
+                        placeholder="e.g., Blue gate next to the supermarket, 3rd floor..."
+                        class="w-full bg-black/40 text-stone-300 text-sm px-4 py-3 rounded-xl border border-white/5 focus:border-amber-500 outline-none resize-none"></textarea>
+                </div>
+
+                <!-- 5. PAYMENT METHOD -->
                 <div class="mb-6 relative">
                     <p class="text-xs text-stone-400 font-semibold uppercase tracking-wider mb-2">Payment Method</p>
 
@@ -646,6 +679,10 @@
                 <span>Subtotal</span>
                 <span id="cart-subtotal" class="font-medium text-stone-300">Ksh 0</span>
             </div>
+            <div class="flex justify-between text-sm text-stone-400 mb-2">
+                <span>Platform Fee (10%)</span>
+                <span id="cart-platform-fee" class="text-white font-medium">Ksh 0</span>
+            </div>
             <div class="flex justify-between text-sm text-stone-400">
                 <span>Delivery Fee</span>
                 <span id="cart-delivery-fee" class="font-medium text-stone-300">Ksh 0</span>
@@ -656,7 +693,7 @@
             </div>
         </div>
 
-        <button id="checkout-btn" onclick="processFirebaseOrder()"
+        <button id="checkout-btn" onclick="processCheckout()"
             class="w-full flex items-center justify-center bg-amber-600 hover:bg-amber-500 text-white py-4 rounded-xl text-sm font-bold transition shadow-lg shadow-amber-900/40 group">
             Proceed to Checkout
             <svg class="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor"
@@ -815,7 +852,7 @@
             </form>
 
             <div class="mt-8 pt-6 border-t border-white/10">
-                <button onclick="alert('Firebase Google Provider Hook Here!')"
+                <button id="google-login-btn"
                     class="w-full flex items-center justify-center bg-white hover:bg-stone-200 text-black py-3.5 rounded-xl text-sm font-bold transition shadow-lg">
                     <svg class="w-5 h-5 mr-3" viewBox="0 0 24 24">
                         <path
@@ -835,6 +872,7 @@
                 </button>
             </div>
         </div>
+    </div>
     </div>
     <div id="orders-drawer-bg"
         class="fixed inset-0 z-[300] bg-black/60 backdrop-blur-sm hidden transition-opacity opacity-0 duration-300"
@@ -876,6 +914,54 @@
 
         </div>
     </div>
+    <!-- MOCK M-PESA CHECKOUT MODAL -->
+    <div id="payment-modal"
+        class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+        <div class="bg-stone-900 border border-white/10 p-6 rounded-2xl w-[90%] max-w-md shadow-2xl transition-all scale-95 opacity-0"
+            id="payment-modal-content">
+
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-white flex items-center">
+                    <span class="bg-green-500 w-3 h-3 rounded-full mr-3"></span>
+                    M-Pesa Checkout
+                </h3>
+                <button onclick="closePaymentModal()" class="text-stone-400 hover:text-white transition">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-stone-400 mb-1">TOTAL AMOUNT</label>
+                    <p id="payment-amount-display" class="text-3xl font-black text-white">Ksh 0</p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-stone-400 mb-1">M-PESA NUMBER</label>
+                    <input type="text" id="mpesa-number" placeholder="07XX XXX XXX"
+                        class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-green-500 transition">
+                    <p class="text-[10px] text-stone-500 mt-1">This is a secure sandbox environment.</p>
+                </div>
+
+                <button id="confirm-payment-btn" onclick="simulatePayment()"
+                    class="w-full bg-green-500 hover:bg-green-400 text-black font-bold py-4 rounded-xl mt-4 transition flex justify-center items-center">
+                    <span id="payment-btn-text">Confirm & Pay</span>
+                    <!-- The Loading Spinner (Hidden by default) -->
+                    <svg id="payment-spinner" class="hidden w-5 h-5 ml-2 animate-spin text-black"
+                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                        </circle>
+                        <path class="opacity-75" fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+
+        </div>
+    </div>
     <script type="module">
         // FIREBASE INITIALIZATION & AUTHENTICATION
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
@@ -885,7 +971,9 @@
             signInWithEmailAndPassword,
             onAuthStateChanged,
             signOut,
-            updateProfile // <--- ADD THIS HERE!
+            updateProfile,
+            GoogleAuthProvider, // <--- ADDED FOR GOOGLE LOGIN
+            signInWithPopup     // <--- ADDED FOR GOOGLE LOGIN
         } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
 
         // Import the Firestore Database tools PLUS the Search tools!
@@ -926,6 +1014,41 @@
         window.orderBy = orderBy;
         window.auth = auth;
 
+        // ==========================================
+        // GOOGLE SIGN-IN LOGIC
+        // ==========================================
+        const googleProvider = new GoogleAuthProvider();
+
+        // FIX #2: Force Google to always show the "Choose an account" screen
+        googleProvider.setCustomParameters({
+            prompt: 'select_account'
+        });
+
+        const googleBtn = document.getElementById('google-login-btn');
+
+        if (googleBtn) {
+            googleBtn.addEventListener('click', async () => {
+                try {
+                    const result = await signInWithPopup(auth, googleProvider);
+                    const user = result.user;
+
+                    console.log("Successfully logged in with Google:", user.displayName);
+                    alert(`Welcome, ${user.displayName}!`);
+
+                    // Optional: Close your modal here
+
+                } catch (error) {
+                    // FIX #1: Ignore the error if the user intentionally closed the popup
+                    if (error.code === 'auth/popup-closed-by-user') {
+                        console.log("Sign-in cancelled by user.");
+                        return; // Stop the code here so the alert below doesn't fire
+                    }
+
+                    console.error("Google Auth Failed:", error.code, error.message);
+                    alert("Google login failed. Please try again.");
+                }
+            });
+        }
 
         // =============================================================
         // FETCH USER ORDERS (OPTIMIZED FOR FIREBASE FREE TIER)
@@ -941,13 +1064,15 @@
             // ---------------------------------------------------------
             // QUERY 1: LIVE ACTIVE ORDERS (Real-time Listener)
             // ---------------------------------------------------------
+            // THE FIX: Removed "window." from query, collection, db, where, and orderBy
             const activeQuery = query(
                 collection(db, "orders"),
                 where("customerEmail", "==", userEmail),
-                where("orderStatus", "in", ["Pending", "Preparing", "Ready for Delivery", "Out for Delivery"]),
+                where("status", "in", ["pending", "Pending", "Preparing", "Ready for Delivery", "Out for Delivery"]),
                 orderBy("timestamp", "desc")
             );
 
+            // THE FIX: Removed "window." from onSnapshot
             onSnapshot(activeQuery, (snapshot) => {
                 if (snapshot.empty) {
                     activeContainer.innerHTML = `<div class="text-xs text-stone-500 bg-white/5 p-3 rounded-xl border border-white/5">No active orders right now. Time to buy some bread!</div>`;
@@ -965,17 +1090,18 @@
             });
 
             // ---------------------------------------------------------
-            // QUERY 2: PAST ORDERS HISTORY (Upgraded to a live feed)
+            // QUERY 2: PAST ORDERS HISTORY 
             // ---------------------------------------------------------
+            // THE FIX: Removed "window." from query, collection, db, where, orderBy, and limit
             const historyQuery = query(
                 collection(db, "orders"),
                 where("customerEmail", "==", userEmail),
-                where("orderStatus", "==", "Delivered"),
+                where("status", "==", "Delivered"),
                 orderBy("timestamp", "desc"),
                 limit(5)
             );
 
-            // Swapped getDocs for onSnapshot so it updates instantly!
+            // THE FIX: Removed "window." from onSnapshot
             onSnapshot(historyQuery, (snapshot) => {
                 if (snapshot.empty) {
                     pastContainer.innerHTML = `<div class="text-xs text-stone-600 italic">No past orders found.</div>`;
@@ -999,22 +1125,42 @@
         function buildUserOrderCard(orderId, order) {
             const itemsList = order.items.map(i => `<li>• ${i.qty}x ${i.title}</li>`).join('');
 
+            // THE FIX: Match the new status label and handle lowercase
+            const currentStatus = order.status || "pending";
+
+            // Capitalize the first letter so "pending" looks like "Pending" on the UI
+            const displayStatus = currentStatus.charAt(0).toUpperCase() + currentStatus.slice(1);
+
             let statusColor = "bg-stone-500";
-            if (order.orderStatus === "Pending") statusColor = "bg-amber-500 text-[#1a110c]";
-            if (order.orderStatus === "Preparing") statusColor = "bg-blue-500 text-white";
-            if (order.orderStatus === "Ready for Delivery") statusColor = "bg-purple-500 text-white";
-            if (order.orderStatus === "Out for Delivery") statusColor = "bg-orange-500 text-white";
-            if (order.orderStatus === "Delivered") statusColor = "bg-green-500/20 text-green-400 border border-green-500/30";
+            if (currentStatus.toLowerCase() === "pending") statusColor = "bg-amber-500 text-[#1a110c]";
+            else if (currentStatus === "Preparing") statusColor = "bg-blue-500 text-white";
+            else if (currentStatus === "Ready for Delivery") statusColor = "bg-purple-500 text-white";
+            else if (currentStatus === "Out for Delivery") statusColor = "bg-orange-500 text-white";
+            else if (currentStatus === "Delivered") statusColor = "bg-green-500/20 text-green-400 border border-green-500/30";
+
+            // THE FIX: Grab the new totalAmount and format it with commas
+            const displayTotal = order.totalAmount ? `Ksh ${order.totalAmount.toLocaleString()}` : "Calculating...";
+
+            // THE FIX: Convert Firebase timestamp to a readable date
+            let displayDate = "Today";
+            if (order.timestamp && order.timestamp.toDate) {
+                displayDate = order.timestamp.toDate().toLocaleDateString();
+            }
+
+            // ADDED: Fallback just in case paymentMethod is missing on older orders
+            const paymentMethod = order.paymentMethod || "M-Pesa";
 
             return `
                 <div class="bg-black/20 border border-white/5 p-4 rounded-xl space-y-3">
                     <div class="flex justify-between items-start">
                         <div>
                             <span class="text-[9px] text-stone-500 block">ID: ${orderId.slice(0, 6).toUpperCase()}</span>
-                            <span class="text-xs text-stone-300 font-semibold">${order.deliveryArea}</span>
+                            <span class="text-xs text-stone-300 font-semibold">${order.deliveryArea || "Pickup"}</span>
+                            <!-- THE NEW PAYMENT METHOD LINE -->
+                            <p class="text-[10px] text-stone-400 mt-1 uppercase tracking-wider">💳 ${paymentMethod}</p>
                         </div>
                         <span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${statusColor}">
-                            ${order.orderStatus}
+                            ${displayStatus}
                         </span>
                     </div>
                     
@@ -1023,13 +1169,12 @@
                     </ul>
                     
                     <div class="text-[10px] text-stone-500 flex justify-between items-center pt-1">
-                        <span>Total: <strong class="text-white">${order.totalPrice}</strong></span>
-                        <span>${order.deliveryDate}</span>
+                        <span>Total: <strong class="text-white">${displayTotal}</strong></span>
+                        <span>${displayDate}</span>
                     </div>
                 </div>
             `;
         }
-
         // ==========================================
         // THE AUTH STATE OBSERVER (The Brain)
         // ==========================================
@@ -1165,71 +1310,9 @@
         let isAnimating = false;
         let autoPlayTimer;
 
-        // ==========================================
-        // UPGRADED: SMART TIME-TRAVEL PREVENTION ENGINE
-        // ==========================================
         window.onload = () => {
-            initDateLogic();
-            applySortAndFilter(); // <--- ADD THIS LINE
+            applySortAndFilter(); 
         };
-
-        function initDateLogic() {
-            const dateInput = document.getElementById('delivery-date');
-            const now = new Date();
-            const currentHour = now.getHours();
-            let minDate = new Date(now);
-
-            if (currentHour >= 10) {
-                minDate.setDate(now.getDate() + 1);
-            }
-
-            // FIX: Manually format local timezone string to avoid UTC shift!
-            const year = minDate.getFullYear();
-            const month = String(minDate.getMonth() + 1).padStart(2, '0');
-            const day = String(minDate.getDate()).padStart(2, '0');
-            const localMinDateString = `${year}-${month}-${day}`;
-
-            dateInput.min = localMinDateString;
-            dateInput.value = localMinDateString;
-
-            validateDeliveryTime();
-        }
-
-        function validateDeliveryTime() {
-            const dateInput = document.getElementById('delivery-date').value;
-            if (!dateInput) return;
-
-            const selectedDate = new Date(dateInput);
-            const now = new Date();
-            const currentHour = now.getHours();
-
-            // Normalize times to midnight for easy Day 1 vs Day 2 comparison
-            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-            const chosenDay = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate()).getTime();
-
-            const btnMorning = document.getElementById('toggle-morning');
-
-            // Reset buttons (enable Morning by default)
-            btnMorning.disabled = false;
-            btnMorning.classList.remove('opacity-50', 'cursor-not-allowed');
-
-            // Rule 2: Disable Morning Delivery if:
-            // A) They pick Today (Morning delivery requires ordering yesterday)
-            // B) They pick Tomorrow, but it's already past 7:00 PM (19:00) today.
-            const isTomorrow = (chosenDay - today === 86400000);
-            const isToday = (chosenDay === today);
-
-            if (isToday || (isTomorrow && currentHour >= 19)) {
-                btnMorning.disabled = true;
-                btnMorning.classList.add('opacity-50', 'cursor-not-allowed');
-
-                // Auto-switch to Evening so they aren't stuck on a dead option
-                if (deliveryPreference === 'Morning') {
-                    setDeliveryTime('Evening');
-                }
-            }
-        }
-
         // ==========================================
         // NEW: PASSWORD TOGGLE LOGIC
         // ==========================================
@@ -1389,7 +1472,6 @@
 
         // Cart Management System
         let cart = [];
-        let deliveryPreference = "Morning";
         let currentOrderIndex = 0; let currentQty = 1;
 
         function openOrderModal(index) {
@@ -1432,23 +1514,23 @@
         function addToCart() {
             const dish = topDishes[currentOrderIndex];
             let existingItem = cart.find(item => item.id === currentOrderIndex);
-            
+
             if (existingItem) {
                 existingItem.qty += currentQty;
             } else {
-                cart.push({ 
-                    id: currentOrderIndex, 
-                    title: dish.topTitle + (dish.bottomTitle ? " " + dish.bottomTitle : ""), 
-                    chef: dish.chef, 
+                cart.push({
+                    id: currentOrderIndex,
+                    title: dish.topTitle + (dish.bottomTitle ? " " + dish.bottomTitle : ""),
+                    chef: dish.chef,
                     ownerEmail: dish.ownerEmail, // <--- THE NEW SECRET TAG!
-                    price: dish.rawPrice, 
-                    qty: currentQty, 
-                    image: dish.image 
+                    price: dish.rawPrice,
+                    qty: currentQty,
+                    image: dish.image
                 });
             }
 
-            updateCartBadge(); 
-            closeOrderModal(); 
+            updateCartBadge();
+            closeOrderModal();
             renderCart();
         }
 
@@ -1560,37 +1642,190 @@
                 subtotal += item.price * item.qty;
             });
 
-            // Get the Delivery Fee from the dropdown
+            // 1. Calculate the 10% Platform Fee (Rounded up to nearest whole shilling)
+            let platformFee = 0;
+            if (subtotal > 0) {
+                platformFee = Math.ceil(subtotal * 0.10);
+            }
+
+            // 2. Get the Delivery Fee from the dropdown
             const deliveryDropdown = document.getElementById('delivery-area');
             let deliveryFee = 0;
 
-            // Only add the fee if they have actually selected a valid area
             if (deliveryDropdown && deliveryDropdown.value !== "0") {
                 deliveryFee = parseInt(deliveryDropdown.value);
             }
 
-            const total = subtotal + deliveryFee;
+            // 3. Calculate Final Total (Subtotal + Delivery + Platform Fee)
+            const total = subtotal + deliveryFee + platformFee;
 
-            // Update the UI
+            // 4. Update the UI Prices
             document.getElementById('cart-subtotal').innerText = `Ksh ${subtotal}`;
             document.getElementById('cart-delivery-fee').innerText = `Ksh ${deliveryFee}`;
             document.getElementById('cart-total-price').innerText = `Ksh ${total}`;
 
+            // Try to update the Platform Fee UI (Requires HTML update in Step 2)
+            const platformFeeEl = document.getElementById('cart-platform-fee');
+            if (platformFeeEl) {
+                platformFeeEl.innerText = `Ksh ${platformFee}`;
+            }
+
             // Update the floating cart badge in the Nav bar
             let totalItems = 0;
             cart.forEach(item => totalItems += item.qty);
-            document.querySelector('.cart-badge').innerText = totalItems;
-        }
+            document.querySelectorAll('.cart-badge').forEach(badge => {
+                badge.innerText = totalItems;
+            });
 
-        function setDeliveryTime(time) {
-            deliveryPreference = time;
-            const btnMorning = document.getElementById('toggle-morning'); const btnEvening = document.getElementById('toggle-evening');
-            if (time === 'Morning') {
-                btnMorning.className = "flex-1 py-2 text-sm font-bold text-white bg-amber-600 rounded-lg shadow-md transition-all z-10"; btnEvening.className = "flex-1 py-2 text-sm font-bold text-stone-400 hover:text-stone-200 transition-all z-10";
-            } else {
-                btnEvening.className = "flex-1 py-2 text-sm font-bold text-white bg-amber-600 rounded-lg shadow-md transition-all z-10"; btnMorning.className = "flex-1 py-2 text-sm font-bold text-stone-400 hover:text-stone-200 transition-all z-10";
+            // ==========================================
+            // 5. THE 100 KSH MINIMUM ORDER BOUNCER
+            // ==========================================
+            const checkoutBtn = document.getElementById('checkout-btn');
+
+            if (checkoutBtn) {
+                if (subtotal > 0 && subtotal < 100) {
+                    // Cart has items, but under 100 Ksh -> Lock the button
+                    checkoutBtn.disabled = true;
+                    checkoutBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                    checkoutBtn.innerText = `Minimum Order: 100 Ksh (Add Ksh ${100 - subtotal})`;
+                } else if (subtotal === 0) {
+                    // Cart is empty -> Lock the button
+                    checkoutBtn.disabled = true;
+                    checkoutBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                    checkoutBtn.innerText = "Cart is Empty";
+                } else {
+                    // Cart is 100 Ksh or more! -> Unlock the button
+                    checkoutBtn.disabled = false;
+                    checkoutBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    checkoutBtn.innerText = "Proceed to Checkout";
+                }
             }
         }
+        // ==========================================
+        // MOCK PAYMENT SIMULATION (PHASE 3)
+        // ==========================================
+
+        function openPaymentModal() {
+            // 1. Grab the final total from the cart
+            const finalTotal = document.getElementById('cart-total-price').innerText;
+            document.getElementById('payment-amount-display').innerText = finalTotal;
+
+            // 2. Close the cart drawer
+            closeCart();
+
+            // 3. Animate the payment modal opening
+            document.getElementById('payment-modal').classList.remove('hidden');
+            setTimeout(() => {
+                document.getElementById('payment-modal-content').classList.remove('scale-95', 'opacity-0');
+                document.getElementById('payment-modal-content').classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closePaymentModal() {
+            document.getElementById('payment-modal-content').classList.remove('scale-100', 'opacity-100');
+            document.getElementById('payment-modal-content').classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                document.getElementById('payment-modal').classList.add('hidden');
+            }, 300);
+        }
+
+        async function simulatePayment() {
+            const phoneInput = document.getElementById('mpesa-number').value;
+
+            // Basic validation to ensure they typed something resembling a phone number
+            if (phoneInput.length < 10) {
+                alert("Please enter a valid 10-digit M-Pesa number.");
+                return;
+            }
+
+            const btnText = document.getElementById('payment-btn-text');
+            const spinner = document.getElementById('payment-spinner');
+            const btn = document.getElementById('confirm-payment-btn');
+
+            // Start the loading state (Locks the button so they can't click twice)
+            btn.disabled = true;
+            btnText.innerText = "Authorizing...";
+            spinner.classList.remove('hidden');
+
+            // The 2-second Network Delay Simulation
+            setTimeout(() => {
+
+                // Success state UI changes
+                btnText.innerText = "Payment Successful!";
+                spinner.classList.add('hidden');
+                btn.classList.remove('bg-green-500', 'hover:bg-green-400');
+                btn.classList.add('bg-white'); // Flash white for success
+
+                // Wait 1.2 seconds so the user reads "Successful!", then send to database
+                setTimeout(async () => {
+                    closePaymentModal();
+
+                    // ==========================================
+                    // FIREBASE DATABASE INJECTION
+                    // ==========================================
+                    try {
+                        const finalTotal = document.getElementById('payment-amount-display').innerText;
+                        const rawTotal = parseInt(finalTotal.replace(/[^0-9]/g, '')) || 0;
+
+                        // Grab Location Area
+                        const deliveryTextSpan = document.getElementById('delivery-selected-text');
+                        let locationName = "Pickup";
+                        if (deliveryTextSpan && deliveryTextSpan.innerText !== "Select your area...") {
+                            locationName = deliveryTextSpan.innerText.split('(')[0].trim();
+                        }
+
+                        // Grab Date and Time
+                        const dateInput = document.getElementById('delivery-date');
+                        const timeInput = document.getElementById('delivery-time');
+                        const orderDate = (dateInput && dateInput.value) ? dateInput.value : "Today";
+                        const orderTime = (timeInput && timeInput.value) ? timeInput.value : "ASAP";
+
+                        // --- THE NEW FIX: Grab Delivery Notes ---
+                        const notesInput = document.getElementById('delivery-notes');
+                        const notes = (notesInput && notesInput.value.trim() !== "") ? notesInput.value : "No specific instructions.";
+
+                        // Build the Order Ticket
+                        const orderTicket = {
+                            customerEmail: window.auth.currentUser ? window.auth.currentUser.email : "Guest",
+                            customerPhone: phoneInput,
+                            paymentMethod: "M-Pesa",    // <--- Added Payment Method
+                            deliveryNotes: notes,       // <--- Added Delivery Notes
+                            items: cart,
+                            totalAmount: rawTotal,
+                            status: "pending",
+                            deliveryArea: locationName,
+                            deliveryDate: orderDate,
+                            deliveryTime: orderTime,
+                            timestamp: window.serverTimestamp()
+                        };
+
+                        // Push to Firestore 'orders' collection
+                        await window.addDoc(window.collection(window.db, "orders"), orderTicket);
+                        console.log("Order successfully written to database!");
+
+                    } catch (error) {
+                        console.error("Database Sync Error:", error);
+                        alert("Payment cleared, but database failed to sync. Check console.");
+                    }
+                    // ==========================================
+
+                    // Empty the cart and reset UI
+                    cart = [];
+                    updateCartBadge();
+                    renderCart();
+
+                    // Reset the payment button back to default for the next customer
+                    btn.disabled = false;
+                    btnText.innerText = "Confirm & Pay";
+                    btn.classList.add('bg-green-500', 'hover:bg-green-400');
+                    btn.classList.remove('bg-white');
+                    document.getElementById('mpesa-number').value = '';
+
+                }, 1200);
+
+            }, 2000);
+        }
+
 
         async function processFirebaseOrder() {
             if (cart.length === 0) {
@@ -1611,7 +1846,7 @@
             const deliveryArea = document.getElementById('delivery-selected-text').innerText;
             const paymentMethod = document.getElementById('payment-selected-text').innerText;
             const grandTotalText = document.getElementById('cart-total-price').innerText;
-            
+
             // This uses Regex to delete everything that IS NOT a number, then converts it to an integer
             const grandTotalNumber = parseInt(grandTotalText.replace(/[^0-9]/g, ''), 10);
 
@@ -1651,7 +1886,7 @@
                 customerPhone: cleanPhone,
                 items: cart,
                 deliveryDate: deliveryDate,
-                deliveryTime: deliveryPreference,
+                deliveryTime: document.getElementById('delivery-time').value,
                 deliveryArea: deliveryArea,
                 paymentMethod: paymentMethod,
                 totalPrice: grandTotalNumber, // <--- FIXED: Now sending the pure integer!
@@ -1952,7 +2187,246 @@
                 document.getElementById('orders-drawer-bg').classList.add('hidden');
             }, 300);
         }
+        // ==========================================
+        // DYNAMIC 5-DAY CALENDAR GENERATOR
+        // ==========================================
+        function populateDeliveryDates() {
+            const dateSelect = document.getElementById('delivery-date');
+            if (!dateSelect) return;
 
+            dateSelect.innerHTML = '';
+            const today = new Date();
+
+            for (let i = 0; i < 5; i++) {
+                let nextDate = new Date();
+                nextDate.setDate(today.getDate() + i);
+
+                // Formats to: "Mon, 31 Jul"
+                let dateString = nextDate.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+
+                if (i === 0) dateString = "Today (" + dateString + ")";
+                else if (i === 1) dateString = "Tomorrow (" + dateString + ")";
+
+                dateSelect.innerHTML += `<option value="${dateString}">${dateString}</option>`;
+            }
+        }
+
+        // Run this when the page loads so the dates are ready
+        document.addEventListener('DOMContentLoaded', () => {
+            populateDeliveryDates();
+        });
+
+        // ==========================================
+        // SMART CHECKOUT ROUTER & COD FIX
+        // ==========================================
+        function processCheckout() {
+            // 1. Validate Delivery Area
+            const areaSpan = document.getElementById('delivery-selected-text');
+            if (!areaSpan || areaSpan.innerText === "Select your area...") {
+                alert("Please select a delivery area before proceeding.");
+                return;
+            }
+
+            // 2. THE COD FIX: Read the hidden input value directly
+            const paymentMethod = document.getElementById('payment-method').value;
+
+            if (paymentMethod === "cod") {
+                submitFinalOrder("Cash on Delivery");
+            } else {
+                openPaymentModal();
+            }
+        }
+
+        // ==========================================
+        // SMART DATE & TIME ENGINE (Classic GitHub Edition)
+        // ==========================================
+        window.availableDates = [];
+
+        window.toggleDateDropdown = function () {
+            document.getElementById('date-options-list').classList.toggle('hidden');
+            document.getElementById('delivery-options-list').classList.add('hidden');
+            document.getElementById('payment-options-list').classList.add('hidden');
+        };
+
+        window.generateSmartDates = function () {
+            const today = new Date();
+            const currentHour = today.getHours();
+
+            window.availableDates = [];
+            let daysAdded = 0;
+            let dayOffset = 0;
+
+            while (daysAdded < 5) {
+                let targetDate = new Date();
+                targetDate.setDate(today.getDate() + dayOffset);
+
+                let isToday = dayOffset === 0;
+                let isTomorrow = dayOffset === 1;
+
+                let canMorning = true;
+                let canEvening = true;
+
+                // Cutoff Rules (10 AM for Evening, 7 PM for Morning)
+                if (isToday) {
+                    canMorning = false;
+                    if (currentHour >= 10) canEvening = false;
+                }
+                if (isTomorrow) {
+                    if (currentHour >= 19) canMorning = false;
+                }
+
+                if (canMorning || canEvening) {
+                    let dateString = targetDate.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+                    if (isToday) dateString = "Today (" + dateString + ")";
+                    else if (isTomorrow) dateString = "Tomorrow (" + dateString + ")";
+
+                    window.availableDates.push({
+                        label: dateString,
+                        value: dateString,
+                        canMorning: canMorning,
+                        canEvening: canEvening
+                    });
+                    daysAdded++;
+                }
+                dayOffset++;
+            }
+            window.renderDateDropdown();
+        };
+
+        window.renderDateDropdown = function () {
+            const list = document.getElementById('date-options-list');
+            list.innerHTML = '';
+            window.availableDates.forEach((dateObj, index) => {
+                list.innerHTML += `<li onclick="window.selectDate(${index})" class="px-4 py-3.5 text-sm text-stone-300 hover:bg-amber-600 hover:text-white cursor-pointer transition-colors border-b border-white/5">${dateObj.label}</li>`;
+            });
+            // Auto-select the first valid date
+            if (window.availableDates.length > 0) {
+                window.selectDate(0);
+            }
+        };
+
+        window.selectDate = function (index) {
+            const selectedObj = window.availableDates[index];
+            document.getElementById('date-selected-text').innerText = selectedObj.label;
+            document.getElementById('delivery-date').value = selectedObj.value;
+            document.getElementById('date-options-list').classList.add('hidden');
+
+            // Auto-correct time if current selection is invalid for new date
+            let currentTime = document.getElementById('delivery-time').value;
+            if (currentTime === 'Morning' && !selectedObj.canMorning) currentTime = 'Evening';
+            if (currentTime === 'Evening' && !selectedObj.canEvening) currentTime = 'Morning';
+
+            window.setDeliveryTime(currentTime);
+        };
+
+        // THE ROCK-SOLID UI TOGGLE
+        window.setDeliveryTime = function (timeStr) {
+            const dateVal = document.getElementById('delivery-date').value;
+            const dateObj = window.availableDates.find(d => d.value === dateVal) || window.availableDates[0];
+
+            // 1. Block invalid clicks via an alert
+            if (timeStr === 'Morning' && !dateObj.canMorning) {
+                alert("Morning delivery must be ordered before 7 PM the previous day.");
+                return;
+            }
+            if (timeStr === 'Evening' && !dateObj.canEvening) {
+                alert("Evening delivery must be ordered before 10 AM the same day.");
+                return;
+            }
+
+            // 2. Update the hidden input
+            document.getElementById('delivery-time').value = timeStr;
+
+            const btnMorning = document.getElementById('toggle-morning');
+            const btnEvening = document.getElementById('toggle-evening');
+
+            // 3. Apply your original, proven visual styles!
+            if (timeStr === 'Morning') {
+                btnMorning.className = "flex-1 py-2 text-sm font-bold text-white bg-amber-600 rounded-lg shadow-md transition-all z-10 cursor-pointer";
+
+                // If Evening is blocked for this date, grey it out completely
+                if (!dateObj.canEvening) {
+                    btnEvening.className = "flex-1 py-2 text-sm font-bold text-stone-600 bg-black/20 cursor-not-allowed opacity-50 z-10";
+                } else {
+                    btnEvening.className = "flex-1 py-2 text-sm font-bold text-stone-400 hover:text-stone-200 transition-all z-10 cursor-pointer";
+                }
+            } else {
+                btnEvening.className = "flex-1 py-2 text-sm font-bold text-white bg-amber-600 rounded-lg shadow-md transition-all z-10 cursor-pointer";
+
+                // If Morning is blocked for this date, grey it out completely
+                if (!dateObj.canMorning) {
+                    btnMorning.className = "flex-1 py-2 text-sm font-bold text-stone-600 bg-black/20 cursor-not-allowed opacity-50 z-10";
+                } else {
+                    btnMorning.className = "flex-1 py-2 text-sm font-bold text-stone-400 hover:text-stone-200 transition-all z-10 cursor-pointer";
+                }
+            }
+        };
+
+        // Run the engine when the page loads!
+        document.addEventListener('DOMContentLoaded', () => {
+            window.generateSmartDates();
+        });
+        // ==========================================
+        // CASH ON DELIVERY (DIRECT INJECTION)
+        // ==========================================
+        async function submitFinalOrder(paymentType) {
+            try {
+                // THE FIX: Calculate the exact total securely from the cart data!
+                const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+                const platformFee = Math.round(subtotal * 0.10);
+                const deliveryFee = parseInt(document.getElementById('delivery-area').value) || 0;
+                const rawTotal = subtotal + platformFee + deliveryFee;
+
+                // Grab Location
+                const deliveryTextSpan = document.getElementById('delivery-selected-text');
+                let locationName = "Pickup";
+                if (deliveryTextSpan && deliveryTextSpan.innerText !== "Select your area...") {
+                    locationName = deliveryTextSpan.innerText.split('(')[0].trim();
+                }
+
+                // Grab Date, Time, Notes, Phone
+                const dateInput = document.getElementById('delivery-date');
+                const timeInput = document.getElementById('delivery-time');
+                const orderDate = (dateInput && dateInput.value) ? dateInput.value : "Today";
+                const orderTime = (timeInput && timeInput.value) ? timeInput.value : "ASAP";
+
+                const notesInput = document.getElementById('delivery-notes');
+                const notes = (notesInput && notesInput.value.trim() !== "") ? notesInput.value : "No specific instructions.";
+                const phoneInput = document.getElementById('delivery-phone').value || "N/A";
+
+                // Build the Order Ticket
+                const orderTicket = {
+                    customerEmail: window.auth && window.auth.currentUser ? window.auth.currentUser.email : "Guest",
+                    customerPhone: phoneInput,
+                    paymentMethod: paymentType,
+                    deliveryNotes: notes,
+                    items: cart,
+                    totalAmount: rawTotal, // Now it correctly pushes the math!
+                    status: "pending",
+                    deliveryArea: locationName,
+                    deliveryDate: orderDate,
+                    deliveryTime: orderTime,
+                    timestamp: window.serverTimestamp()
+                };
+
+                // Push to Firestore
+                await window.addDoc(window.collection(window.db, "orders"), orderTicket);
+
+                alert("Order successfully placed with Cash on Delivery!");
+
+                // Close drawer and reset UI
+                closeCart();
+                cart = [];
+                updateCartBadge();
+                renderCart();
+                if (notesInput) notesInput.value = '';
+                if (document.getElementById('delivery-phone')) document.getElementById('delivery-phone').value = '';
+
+            } catch (error) {
+                console.error("Database Sync Error:", error);
+                alert("Failed to sync order to database. Check console.");
+            }
+        }
     </script>
 </body>
 

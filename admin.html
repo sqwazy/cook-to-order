@@ -268,7 +268,7 @@
         // ==========================================
         let orderListener = null;
 
-        window.startOrderListener = function () {
+      window.startOrderListener = function () {
             const kitchenGrid = document.getElementById('live-orders-grid');
             const riderGrid = document.getElementById('rider-orders-grid');
 
@@ -277,9 +277,9 @@
 
             try {
                 const q = window.query(window.collection(window.db, "orders"), window.orderBy("timestamp", "desc"), window.limit(50));
-                if (orderListener) orderListener();
+                if (window.orderListener) window.orderListener(); // Clear old listener if it exists
 
-                orderListener = window.onSnapshot(q, (querySnapshot) => {
+                window.orderListener = window.onSnapshot(q, (querySnapshot) => {
                     kitchenGrid.innerHTML = '';
                     riderGrid.innerHTML = '';
 
@@ -289,19 +289,23 @@
                     querySnapshot.forEach((documentSnapshot) => {
                         const rawOrder = { id: documentSnapshot.id, ...documentSnapshot.data() };
                         
+                        // --- THE FIX: Match the exact labels sent by the checkout script ---
+                        const currentStatus = rawOrder.status || "pending"; 
+                        const currentTotal = rawOrder.totalAmount || 0;
+                        
                         // --- 1. THE CHEF FILTER ---
-                        let myItems = rawOrder.items;
+                        let myItems = rawOrder.items || [];
 
                         if (window.currentUserRole === "chef") {
                             // Filter the cart to ONLY include items tagged with this chef's email
-                            myItems = rawOrder.items.filter(item => item.ownerEmail === window.currentStaffEmail);
+                            myItems = myItems.filter(item => item.ownerEmail === window.currentStaffEmail);
                             
                             // If this order has NONE of their food, skip this order entirely!
                             if (myItems.length === 0) return; 
                         }
 
                         // --- 2. THE PRICE RECALCULATOR ---
-                        let displayTotal = rawOrder.totalPrice;
+                        let displayTotal = currentTotal;
                         if (window.currentUserRole === "chef") {
                             // Calculate total ONLY for the items this specific chef is cooking
                             displayTotal = myItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
@@ -311,8 +315,8 @@
                         const safeEmail = sanitize(rawOrder.customerEmail);
                         const safePhone = sanitize(rawOrder.customerPhone || "No Phone");
                         const safeArea = sanitize(rawOrder.deliveryArea);
-                        const safeDate = sanitize(rawOrder.deliveryDate);
-                        const safeTime = sanitize(rawOrder.deliveryTime);
+                        const safeDate = sanitize(rawOrder.deliveryDate || "Today");
+                        const safeTime = sanitize(rawOrder.deliveryTime || "ASAP");
 
                         // Build the items list using myItems, NOT the raw cart!
                         const itemsList = myItems.map(i => `<li class="text-sm text-stone-300">• ${i.qty}x ${i.title}</li>`).join('');
@@ -323,10 +327,10 @@
                                 <div class="flex justify-between items-start border-b border-white/10 pb-4 mb-4">
                                     <div>
                                         <span class="text-[10px] text-stone-400 font-bold uppercase tracking-wider block mb-1">ID: ${rawOrder.id.slice(0, 6)}</span>
-                                        <span class="text-sm text-stone-300">Total: <strong class="text-white">Ksh ${displayTotal}</strong></span>
+                                        <span class="text-sm text-stone-300">Total: <strong class="text-white">Ksh ${displayTotal.toLocaleString()}</strong></span>
                                     </div>
                                     <span class="px-2.5 py-1 rounded-md text-[10px] font-bold text-white uppercase tracking-wider STATUS_COLOR">
-                                        ${rawOrder.orderStatus}
+                                        ${currentStatus}
                                     </span>
                                 </div>
                                 <div class="flex-1 mb-2">
@@ -334,6 +338,10 @@
                                         <p>👤 ${safeEmail}</p>
                                         <p>📞 <a href="tel:${safePhone}" class="text-amber-500 hover:underline">${safePhone}</a></p>
                                         <p>📍 ${safeArea} - ${safeDate} (${safeTime})</p>
+                                        
+                                        <!-- THE NEW RIDER NOTES AND PAYMENT METHOD -->
+                                        <p class="text-amber-500 font-semibold border-t border-white/5 pt-2 mt-2">📝 Notes: ${sanitize(rawOrder.deliveryNotes || "None")}</p>
+                                        <p class="text-[10px] text-stone-400 uppercase tracking-wider">💳 ${sanitize(rawOrder.paymentMethod || "M-Pesa")}</p>
                                     </div>
                                     <h3 class="text-[10px] text-amber-500 font-bold uppercase tracking-wider mb-2">Order Items</h3>
                                     <ul class="space-y-1 mb-2 pl-1">${itemsList}</ul>
@@ -342,19 +350,19 @@
                             </div>`;
 
                         // Sort into KITCHEN or RIDER based on status
-                        if (rawOrder.orderStatus === "Pending") {
+                        if (currentStatus.toLowerCase() === "pending") {
                             kitchenCount++;
                             kitchenGrid.innerHTML += baseCard
                                 .replace('STATUS_COLOR', 'bg-amber-500')
                                 .replace('ACTION_BUTTON', `<button onclick="updateOrderStatus('${rawOrder.id}', 'Preparing')" class="w-full mt-4 bg-amber-600 hover:bg-amber-500 text-white py-2.5 rounded-xl text-sm font-bold">Accept & Prepare</button>`);
                         }
-                        else if (rawOrder.orderStatus === "Preparing") {
+                        else if (currentStatus === "Preparing") {
                             kitchenCount++;
                             kitchenGrid.innerHTML += baseCard
                                 .replace('STATUS_COLOR', 'bg-blue-500')
                                 .replace('ACTION_BUTTON', `<button onclick="updateOrderStatus('${rawOrder.id}', 'Ready for Delivery')" class="w-full mt-4 bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-xl text-sm font-bold">Food is Ready</button>`);
                         }
-                        else if (rawOrder.orderStatus === "Ready for Delivery") {
+                        else if (currentStatus === "Ready for Delivery") {
                             // Shows in BOTH! Kitchen knows it's waiting, Rider knows to pick it up.
                             kitchenCount++;
                             riderCount++;
@@ -363,7 +371,7 @@
                             kitchenGrid.innerHTML += waitingCard.replace('ACTION_BUTTON', `<div class="w-full mt-4 bg-black/20 text-stone-400 py-2.5 rounded-xl text-sm font-bold text-center border border-white/5">Waiting for Rider</div>`);
                             riderGrid.innerHTML += waitingCard.replace('ACTION_BUTTON', `<button onclick="updateOrderStatus('${rawOrder.id}', 'Out for Delivery')" class="w-full mt-4 bg-purple-600 hover:bg-purple-500 text-white py-2.5 rounded-xl text-sm font-bold">Start Delivery Run</button>`);
                         }
-                        else if (rawOrder.orderStatus === "Out for Delivery") {
+                        else if (currentStatus === "Out for Delivery") {
                             // Only Rider needs to see it now
                             riderCount++;
                             riderGrid.innerHTML += baseCard
@@ -392,9 +400,9 @@
                 // Point directly to the specific order document
                 const orderRef = window.doc(window.db, "orders", orderId);
 
-                // Update the status field in Firebase
+                // THE FIX: Changed 'orderStatus' to 'status' to match the new M-Pesa checkout!
                 await window.updateDoc(orderRef, {
-                    orderStatus: newStatus
+                    status: newStatus
                 });
 
                 // NOTE: We completely removed the refresh function here!
