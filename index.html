@@ -820,7 +820,8 @@
                     <label
                         class="text-[11px] text-stone-400 font-semibold uppercase tracking-wider mb-1.5 flex justify-between">
                         Password
-                        <a href="#" class="text-amber-500 hover:text-amber-400 normal-case tracking-normal">Forgot?</a>
+                        <button type="button" onclick="window.handleForgotPassword()"
+                            class="text-amber-500 hover:text-amber-400 normal-case tracking-normal cursor-pointer">Forgot?</button>
                     </label>
                     <div class="relative">
                         <input type="password" id="auth-password" placeholder="••••••••" required
@@ -852,8 +853,8 @@
             </form>
 
             <div class="mt-8 pt-6 border-t border-white/10">
-                <button id="google-login-btn"
-                    class="w-full flex items-center justify-center bg-white hover:bg-stone-200 text-black py-3.5 rounded-xl text-sm font-bold transition shadow-lg">
+                <button type="button" onclick="window.handleGoogleLogin()"
+                    class="w-full flex items-center justify-center bg-white hover:bg-stone-200 text-black py-3.5 rounded-xl text-sm font-bold transition shadow-lg cursor-pointer">
                     <svg class="w-5 h-5 mr-3" viewBox="0 0 24 24">
                         <path
                             d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -972,8 +973,9 @@
             onAuthStateChanged,
             signOut,
             updateProfile,
-            GoogleAuthProvider, // <--- ADDED FOR GOOGLE LOGIN
-            signInWithPopup     // <--- ADDED FOR GOOGLE LOGIN
+            GoogleAuthProvider,
+            signInWithPopup,
+            sendPasswordResetEmail // <--- ADD THIS HERE!
         } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
 
         // Import the Firestore Database tools PLUS the Search tools!
@@ -1013,46 +1015,55 @@
         window.getDocs = getDocs;
         window.orderBy = orderBy;
         window.auth = auth;
+        window.sendPasswordResetEmail = sendPasswordResetEmail; // <--- ADD THIS HERE!
+        window.GoogleAuthProvider = GoogleAuthProvider;
+        window.signInWithPopup = signInWithPopup;
 
         // ==========================================
         // GOOGLE SIGN-IN LOGIC
         // ==========================================
-        const googleProvider = new GoogleAuthProvider();
+        window.handleGoogleLogin = async function () {
+            try {
+                // 1. Set up the Google Provider using the window bridge
+                const googleProvider = new window.GoogleAuthProvider();
 
-        // FIX #2: Force Google to always show the "Choose an account" screen
-        googleProvider.setCustomParameters({
-            prompt: 'select_account'
-        });
+                // Force Google to always show the "Choose an account" screen
+                googleProvider.setCustomParameters({
+                    prompt: 'select_account'
+                });
 
-        const googleBtn = document.getElementById('google-login-btn');
+                // 2. Trigger the Google Popup
+                const result = await window.signInWithPopup(window.auth, googleProvider);
+                const user = result.user;
 
-        if (googleBtn) {
-            googleBtn.addEventListener('click', async () => {
-                try {
-                    const result = await signInWithPopup(auth, googleProvider);
-                    const user = result.user;
+                console.log("Successfully logged in with Google:", user.displayName);
+                alert(`Welcome, ${user.displayName}!`);
 
-                    console.log("Successfully logged in with Google:", user.displayName);
-                    alert(`Welcome, ${user.displayName}!`);
-
-                    // Optional: Close your modal here
-
-                } catch (error) {
-                    // FIX #1: Ignore the error if the user intentionally closed the popup
-                    if (error.code === 'auth/popup-closed-by-user') {
-                        console.log("Sign-in cancelled by user.");
-                        return; // Stop the code here so the alert below doesn't fire
-                    }
-
-                    console.error("Google Auth Failed:", error.code, error.message);
-                    alert("Google login failed. Please try again.");
+                // Close the authentication modal automatically
+                if (typeof closeAuth === "function") {
+                    closeAuth();
                 }
-            });
-        }
+
+            } catch (error) {
+                // Ignore the error if the user intentionally closed the popup
+                if (error.code === 'auth/popup-closed-by-user') {
+                    console.log("Sign-in cancelled by user.");
+                    return; // Stop the code here so the alert below doesn't fire
+                }
+
+                console.error("Google Auth Failed:", error.code, error.message);
+                alert("Google login failed. Please try again.");
+            }
+        };
 
         // =============================================================
         // FETCH USER ORDERS (OPTIMIZED FOR FIREBASE FREE TIER)
         // =============================================================
+
+        // NEW: Global variables to track BOTH open pipes
+        window.unsubscribeActiveOrders = null;
+        window.unsubscribePastOrders = null;
+
         window.loadUserOrdersDashboard = function (userEmail) {
             const activeContainer = document.getElementById('active-orders-container');
             const pastContainer = document.getElementById('past-orders-container');
@@ -1061,10 +1072,13 @@
             activeContainer.innerHTML = `<div class="text-xs text-stone-500 animate-pulse">Checking active orders...</div>`;
             pastContainer.innerHTML = `<div class="text-xs text-stone-500 animate-pulse">Loading history...</div>`;
 
+            // NEW: Kill existing listeners if they are already running to prevent duplicates!
+            if (typeof window.unsubscribeActiveOrders === 'function') window.unsubscribeActiveOrders();
+            if (typeof window.unsubscribePastOrders === 'function') window.unsubscribePastOrders();
+
             // ---------------------------------------------------------
-            // QUERY 1: LIVE ACTIVE ORDERS (Real-time Listener)
+            // QUERY 1: LIVE ACTIVE ORDERS
             // ---------------------------------------------------------
-            // THE FIX: Removed "window." from query, collection, db, where, and orderBy
             const activeQuery = query(
                 collection(db, "orders"),
                 where("customerEmail", "==", userEmail),
@@ -1072,17 +1086,14 @@
                 orderBy("timestamp", "desc")
             );
 
-            // THE FIX: Removed "window." from onSnapshot
-            onSnapshot(activeQuery, (snapshot) => {
+            window.unsubscribeActiveOrders = onSnapshot(activeQuery, (snapshot) => {
                 if (snapshot.empty) {
                     activeContainer.innerHTML = `<div class="text-xs text-stone-500 bg-white/5 p-3 rounded-xl border border-white/5">No active orders right now. Time to buy some bread!</div>`;
                     return;
                 }
-
-                activeContainer.innerHTML = ''; // Clear loading text
+                activeContainer.innerHTML = '';
                 snapshot.forEach((docSnap) => {
-                    const order = docSnap.data();
-                    activeContainer.innerHTML += buildUserOrderCard(docSnap.id, order);
+                    activeContainer.innerHTML += buildUserOrderCard(docSnap.id, docSnap.data());
                 });
             }, (error) => {
                 console.error("Active feed error:", error);
@@ -1092,7 +1103,6 @@
             // ---------------------------------------------------------
             // QUERY 2: PAST ORDERS HISTORY 
             // ---------------------------------------------------------
-            // THE FIX: Removed "window." from query, collection, db, where, orderBy, and limit
             const historyQuery = query(
                 collection(db, "orders"),
                 where("customerEmail", "==", userEmail),
@@ -1101,17 +1111,14 @@
                 limit(5)
             );
 
-            // THE FIX: Removed "window." from onSnapshot
-            onSnapshot(historyQuery, (snapshot) => {
+            window.unsubscribePastOrders = onSnapshot(historyQuery, (snapshot) => {
                 if (snapshot.empty) {
                     pastContainer.innerHTML = `<div class="text-xs text-stone-600 italic">No past orders found.</div>`;
                     return;
                 }
-
-                pastContainer.innerHTML = ''; // Clear loading text
+                pastContainer.innerHTML = '';
                 snapshot.forEach((docSnap) => {
-                    const order = docSnap.data();
-                    pastContainer.innerHTML += buildUserOrderCard(docSnap.id, order);
+                    pastContainer.innerHTML += buildUserOrderCard(docSnap.id, docSnap.data());
                 });
             }, (error) => {
                 console.error("History feed error:", error);
@@ -1229,6 +1236,24 @@
         // SECURE LOG OUT LOGIC
         // ==========================================
         window.handleLogOut = function () {
+            // 1. Kill BOTH listeners BEFORE logging out
+            if (typeof window.unsubscribeActiveOrders === 'function') {
+                window.unsubscribeActiveOrders();
+                window.unsubscribeActiveOrders = null;
+            }
+            if (typeof window.unsubscribePastOrders === 'function') {
+                window.unsubscribePastOrders();
+                window.unsubscribePastOrders = null;
+            }
+            console.log("🛑 All database listeners stopped securely.");
+
+            // 2. Visually clear the dashboard UI 
+            const activeContainer = document.getElementById('active-orders-container');
+            const pastContainer = document.getElementById('past-orders-container');
+            if (activeContainer) activeContainer.innerHTML = '';
+            if (pastContainer) pastContainer.innerHTML = '';
+
+            // 3. Tell Firebase to log the user out
             signOut(auth).then(() => {
                 console.log("🔥 Successfully logged out!");
                 alert("You have been securely logged out.");
@@ -1288,6 +1313,7 @@
                 }
             }
         };
+
     </script>
     <script>
         // ==========================================
@@ -2010,6 +2036,39 @@
             }
         }
         // ==========================================
+        // PASSWORD RESET LOGIC
+        // ==========================================
+        window.handleForgotPassword = function () {
+            // Grab the email from the login form
+            const emailInput = document.getElementById('auth-email');
+            const emailAddress = emailInput ? emailInput.value.trim() : '';
+
+            // Validate that they actually typed something
+            if (!emailAddress) {
+                alert("Please enter your email address first, then click 'Forgot?'.");
+                if (emailInput) emailInput.focus();
+                return;
+            }
+
+            // THE FIX: Using the newly exported modular function
+            window.sendPasswordResetEmail(window.auth, emailAddress)
+                .then(() => {
+                    alert(`A password reset link has been sent to ${emailAddress}. Please check your inbox (and spam folder).`);
+                })
+                .catch((error) => {
+                    console.error("Password reset error:", error);
+
+                    if (error.code === 'auth/user-not-found') {
+                        alert("We couldn't find an account with that email address.");
+                    } else if (error.code === 'auth/invalid-email') {
+                        alert("Please enter a valid email address format.");
+                    } else {
+                        alert("An error occurred. Please try again later.");
+                    }
+                });
+        };
+
+        // ==========================================
         // NEW: MENU FILTERING, SORTING & RENDERING
         // ==========================================
         let currentFilter = 'All';
@@ -2223,7 +2282,7 @@
         // ==========================================
         // SMART CHECKOUT ROUTER & COD FIX (Upgraded Security)
         // ==========================================
-        window.processCheckout = function() {
+        window.processCheckout = function () {
             // 1. Fallback check for empty cart
             if (cart.length === 0) {
                 alert("Your cart is empty.");
@@ -2233,13 +2292,13 @@
             // 2. ENFORCE USER LOGIN
             if (!window.auth || !window.auth.currentUser) {
                 alert("Please log in or create an account to complete your order.");
-                
+
                 // Automatically slide the cart closed
-                closeCart(); 
-                
+                closeCart();
+
                 // Pop open your awesome Auth Modal right to the login tab!
-                openAuth('login'); 
-                
+                openAuth('login');
+
                 return; // Stop the checkout process here
             }
 
@@ -2261,9 +2320,9 @@
             // 5. Proceed to Payment Routing
             const paymentMethod = document.getElementById('payment-method').value;
             if (paymentMethod === "cod") {
-                window.submitFinalOrder("Cash on Delivery"); 
+                window.submitFinalOrder("Cash on Delivery");
             } else {
-                window.openPaymentModal(); 
+                window.openPaymentModal();
             }
         };
         // ==========================================
