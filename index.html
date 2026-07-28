@@ -1311,7 +1311,7 @@
         let autoPlayTimer;
 
         window.onload = () => {
-            applySortAndFilter(); 
+            applySortAndFilter();
         };
         // ==========================================
         // NEW: PASSWORD TOGGLE LOGIC
@@ -1601,9 +1601,8 @@
                 <p class="font-medium">Your cart is empty.</p>
             </div>`;
 
-                subtotalEl.innerText = "Ksh 0";
-                deliveryEl.innerText = "Ksh 0";
-                totalEl.innerText = "Ksh 0";
+                // THE FIX: Force the math function to run so it updates the button and zeroes out the fees!
+                updateCartTotal();
                 return;
             }
 
@@ -1654,6 +1653,11 @@
 
             if (deliveryDropdown && deliveryDropdown.value !== "0") {
                 deliveryFee = parseInt(deliveryDropdown.value);
+            }
+
+            // THE FIX: If the cart is completely empty, wipe out the delivery fee so it doesn't get stuck!
+            if (subtotal === 0) {
+                deliveryFee = 0;
             }
 
             // 3. Calculate Final Total (Subtotal + Delivery + Platform Fee)
@@ -2217,26 +2221,51 @@
         });
 
         // ==========================================
-        // SMART CHECKOUT ROUTER & COD FIX
+        // SMART CHECKOUT ROUTER & COD FIX (Upgraded Security)
         // ==========================================
-        function processCheckout() {
-            // 1. Validate Delivery Area
+        window.processCheckout = function() {
+            // 1. Fallback check for empty cart
+            if (cart.length === 0) {
+                alert("Your cart is empty.");
+                return;
+            }
+
+            // 2. ENFORCE USER LOGIN
+            if (!window.auth || !window.auth.currentUser) {
+                alert("Please log in or create an account to complete your order.");
+                
+                // Automatically slide the cart closed
+                closeCart(); 
+                
+                // Pop open your awesome Auth Modal right to the login tab!
+                openAuth('login'); 
+                
+                return; // Stop the checkout process here
+            }
+
+            // 3. Validate Delivery Area
             const areaSpan = document.getElementById('delivery-selected-text');
             if (!areaSpan || areaSpan.innerText === "Select your area...") {
                 alert("Please select a delivery area before proceeding.");
                 return;
             }
 
-            // 2. THE COD FIX: Read the hidden input value directly
-            const paymentMethod = document.getElementById('payment-method').value;
-
-            if (paymentMethod === "cod") {
-                submitFinalOrder("Cash on Delivery");
-            } else {
-                openPaymentModal();
+            // 4. Validate Phone Number
+            const phoneInput = document.getElementById('delivery-phone');
+            if (!phoneInput || phoneInput.value.trim() === "") {
+                alert("Please enter a valid phone number for delivery.");
+                phoneInput.focus(); // Highlights the box for the user
+                return;
             }
-        }
 
+            // 5. Proceed to Payment Routing
+            const paymentMethod = document.getElementById('payment-method').value;
+            if (paymentMethod === "cod") {
+                window.submitFinalOrder("Cash on Delivery"); 
+            } else {
+                window.openPaymentModal(); 
+            }
+        };
         // ==========================================
         // SMART DATE & TIME ENGINE (Classic GitHub Edition)
         // ==========================================
@@ -2427,6 +2456,18 @@
                 alert("Failed to sync order to database. Check console.");
             }
         }
+        document.addEventListener('click', (event) => {
+            const dropdownBtn = document.getElementById('date-dropdown-btn');
+            const dropdownList = document.getElementById('date-options-list');
+
+            // If both elements exist on the screen
+            if (dropdownBtn && dropdownList) {
+                // Check if the user clicked OUTSIDE of both the button and the list
+                if (!dropdownBtn.contains(event.target) && !dropdownList.contains(event.target)) {
+                    dropdownList.classList.add('hidden'); // Hide the dropdown
+                }
+            }
+        });
     </script>
 </body>
 
