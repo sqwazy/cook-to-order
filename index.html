@@ -1487,13 +1487,31 @@
 
         // Seller Modal
         function openSellerModal() {
-            document.getElementById('seller-chef-name').innerText = topDishes[currentIndex].chef; document.getElementById('seller-bio').innerText = topDishes[currentIndex].bio; document.getElementById('seller-phone').href = "tel:" + topDishes[currentIndex].phone;
+            document.getElementById('seller-chef-name').innerText = topDishes[currentIndex].chef; 
+            document.getElementById('seller-bio').innerText = topDishes[currentIndex].bio; 
+            document.getElementById('seller-phone').href = "tel:" + topDishes[currentIndex].phone;
+            
             document.getElementById('seller-modal').classList.remove('hidden');
-            setTimeout(() => { document.getElementById('seller-modal-content').classList.remove('scale-95', 'opacity-0'); document.getElementById('seller-modal-content').classList.add('scale-100', 'opacity-100'); }, 10);
+            
+            // --- ADDED: Freeze the background scroll ---
+            document.body.classList.add('overflow-hidden');
+
+            setTimeout(() => { 
+                document.getElementById('seller-modal-content').classList.remove('scale-95', 'opacity-0'); 
+                document.getElementById('seller-modal-content').classList.add('scale-100', 'opacity-100'); 
+            }, 10);
         }
+
         function closeSellerModal() {
-            document.getElementById('seller-modal-content').classList.remove('scale-100', 'opacity-100'); document.getElementById('seller-modal-content').classList.add('scale-95', 'opacity-0');
-            setTimeout(() => { document.getElementById('seller-modal').classList.add('hidden'); }, 300);
+            document.getElementById('seller-modal-content').classList.remove('scale-100', 'opacity-100'); 
+            document.getElementById('seller-modal-content').classList.add('scale-95', 'opacity-0');
+            
+            // --- ADDED: Unfreeze the background scroll instantly ---
+            document.body.classList.remove('overflow-hidden');
+
+            setTimeout(() => { 
+                document.getElementById('seller-modal').classList.add('hidden'); 
+            }, 300);
         }
 
         // Cart Management System
@@ -1520,19 +1538,31 @@
             updateOrderTotal();
 
             document.getElementById('order-modal').classList.remove('hidden');
+
+            // --- ADDED: Freeze the background scroll ---
+            document.body.classList.add('overflow-hidden');
+
             setTimeout(() => {
                 document.getElementById('order-modal-content').classList.remove('scale-95', 'opacity-0');
                 document.getElementById('order-modal-content').classList.add('scale-100', 'opacity-100');
             }, 10);
         }
+
         function closeOrderModal() {
-            document.getElementById('order-modal-content').classList.remove('scale-100', 'opacity-100'); document.getElementById('order-modal-content').classList.add('scale-95', 'opacity-0');
+            document.getElementById('order-modal-content').classList.remove('scale-100', 'opacity-100');
+            document.getElementById('order-modal-content').classList.add('scale-95', 'opacity-0');
+
+            // --- ADDED: Unfreeze the background scroll instantly ---
+            document.body.classList.remove('overflow-hidden');
+
             setTimeout(() => { document.getElementById('order-modal').classList.add('hidden'); }, 300);
         }
+
         function changeQty(amount) {
             currentQty += amount; if (currentQty < 1) currentQty = 1;
             document.getElementById('order-qty').innerText = currentQty; updateOrderTotal();
         }
+
         function updateOrderTotal() {
             document.getElementById('order-total').innerText = "Ksh " + (topDishes[currentOrderIndex].rawPrice * currentQty).toLocaleString();
         }
@@ -1549,11 +1579,11 @@
                     title: dish.topTitle + (dish.bottomTitle ? " " + dish.bottomTitle : ""),
                     chef: dish.chef,
                     ownerEmail: dish.ownerEmail,
-                    
+
                     // --- THE NEW LOCATION TAG ---
-                    pickupZone: dish.pickupZone || "Unassigned", 
+                    pickupZone: dish.pickupZone || "Unassigned",
                     // ----------------------------
-                    
+
                     price: dish.rawPrice,
                     qty: currentQty,
                     image: dish.image
@@ -1863,7 +1893,7 @@
 
             }, 2000);
         }
-        
+
         // ==========================================
         // NEW: MOBILE NAV DRAWER LOGIC
         // ==========================================
@@ -2120,21 +2150,33 @@
             document.getElementById('payment-options-list').classList.add('hidden');
         }
 
+       // ==========================================
         // UPGRADED: Close dropdowns if user clicks anywhere else
+        // ==========================================
         document.addEventListener('click', function (event) {
+            
+            // 1. Delivery Area/Zone Dropdown
             const deliveryBtn = document.getElementById('delivery-dropdown-btn');
             const deliveryList = document.getElementById('delivery-options-list');
-            if (deliveryBtn && !deliveryBtn.contains(event.target) && !deliveryList.contains(event.target)) {
+            if (deliveryBtn && deliveryList && !deliveryBtn.contains(event.target) && !deliveryList.contains(event.target)) {
                 deliveryList.classList.add('hidden');
             }
 
+            // 2. Payment Dropdown
             const paymentBtn = document.getElementById('payment-dropdown-btn');
             const paymentList = document.getElementById('payment-options-list');
-            if (paymentBtn && !paymentBtn.contains(event.target) && !paymentList.contains(event.target)) {
+            if (paymentBtn && paymentList && !paymentBtn.contains(event.target) && !paymentList.contains(event.target)) {
                 paymentList.classList.add('hidden');
             }
-        }
-        );
+
+            // 3. Delivery Date Dropdown (Check your HTML IDs for this one!)
+            const dateBtn = document.getElementById('date-dropdown-btn'); // Change this ID if needed
+            const dateList = document.getElementById('date-options-list'); // Change this ID if needed
+            if (dateBtn && dateList && !dateBtn.contains(event.target) && !dateList.contains(event.target)) {
+                dateList.classList.add('hidden');
+            }
+            
+        });
         // --- UI CONTROLS FOR MY ORDERS ---
         function openMyOrders() {
             const currentUser = window.auth ? window.auth.currentUser : null;
@@ -2227,11 +2269,13 @@
                 return;
             }
 
-            // 4. Validate Phone Number
+            // 4. Validate Phone Number (Upgraded for 10-digit format)
             const phoneInput = document.getElementById('delivery-phone');
-            if (!phoneInput || phoneInput.value.trim() === "") {
-                alert("Please enter a valid phone number for delivery.");
-                phoneInput.focus(); // Highlights the box for the user
+            const phoneRegex = /^(07|01)\d{8}$/;
+
+            if (!phoneInput || !phoneRegex.test(phoneInput.value.trim())) {
+                alert("Please enter a valid 10-digit phone number starting with 07 or 01 (e.g., 0712345678).");
+                if (phoneInput) phoneInput.focus(); // Highlights the box for the user
                 return;
             }
 
