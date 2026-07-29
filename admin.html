@@ -47,13 +47,20 @@
 
         <div id="staff-user-info"
             class="hidden items-center gap-3 md:gap-5 bg-black/40 px-4 py-2.5 rounded-2xl border border-white/5 shadow-inner">
-            <div class="flex flex-col items-end">
-                <span class="text-[9px] text-stone-500 font-bold uppercase tracking-widest">Admin</span>
+
+            <!-- FIX: Changed items-end to items-center -->
+            <div class="flex flex-col items-center justify-center">
+                <span id="user-role-label"
+                    class="text-[9px] text-stone-500 font-bold uppercase tracking-widest">ROLE</span>
+
+                <!-- FIX: Added text-center just in case the name gets long -->
                 <span id="admin-user-name"
-                    class="text-xs md:text-sm font-bold text-amber-500 truncate max-w-[100px] md:max-w-[150px]">Loading...</span>
+                    class="text-xs md:text-sm font-bold text-amber-500 truncate max-w-[100px] md:max-w-[150px] text-center">Loading...</span>
             </div>
 
-            <div class="w-px h-6 bg-white/10 hidden md:block"></div> <button onclick="handleStaffLogOut()"
+            <div class="w-px h-6 bg-white/10 hidden md:block"></div>
+
+            <button onclick="handleStaffLogOut()"
                 class="text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 px-3 md:px-4 py-1.5 md:py-2 rounded-xl text-xs md:text-sm font-bold transition border border-red-500/20">
                 Log Out
             </button>
@@ -101,13 +108,13 @@
         <div id="kitchen-view-container" class="block">
             <h1 class="text-3xl md:text-4xl font-extrabold text-white mb-6">Live Kitchen Feed</h1>
             <div id="live-orders-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                </div>
+            </div>
         </div>
 
         <div id="rider-view-container" class="hidden">
             <h1 class="text-3xl md:text-4xl font-extrabold text-white mb-6">Delivery Routes</h1>
             <div id="rider-orders-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                 </div>
+            </div>
         </div>
     </div>
     <script type="module">
@@ -115,7 +122,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
         import { getFirestore, collection, query, orderBy, onSnapshot, updateDoc, doc, getDoc, getDocs, limit } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
-        
+
         const firebaseConfig = {
             apiKey: "AIzaSyCrwuiHQVAAGpeyKswJ19TXzPyAwfaW8fU",
             authDomain: "mombasa-cto.firebaseapp.com",
@@ -138,7 +145,7 @@
         window.getDocs = getDocs; // <--- This will now work perfectly!
         window.doc = doc;
         window.updateDoc = updateDoc;
-        window.onSnapshot = onSnapshot; 
+        window.onSnapshot = onSnapshot;
         window.limit = limit;
 
         // UI Elements
@@ -153,7 +160,7 @@
             temp.textContent = str;
             return temp.innerHTML;
         }
-       // ==========================================
+        // ==========================================
         // 1. THE OBSERVER (The VIP Bouncer)
         // ==========================================
         onAuthStateChanged(auth, async (user) => {
@@ -171,6 +178,10 @@
                         window.currentUserRole = userRole;
                         window.currentStaffEmail = user.email;
 
+                        // --- THE NEW RIDER ZONE VARIABLE ---
+                        window.currentRiderZone = userData.zone || "Unassigned";
+                        // -----------------------------------
+
                         // Show the dashboard
                         loginSection.classList.add('hidden');
                         dashboardSection.classList.remove('hidden');
@@ -178,19 +189,39 @@
 
                         staffUserInfo.classList.remove('hidden');
                         staffUserInfo.classList.add('flex');
-                        
-                        // Update header name
-                        const adminName = user.displayName || user.email.split('@')[0];
-                        document.getElementById('admin-user-name').innerText = `${adminName} (${userRole.toUpperCase()})`;
 
-                        // --- NEW: UI ROLE RESTRICTIONS ---
+                        // Update header name and dynamic role
+                        const displayName = user.displayName || user.email.split('@')[0];
+
+                        // 1. Set the bottom amber text to ONLY the user's name
+                        document.getElementById('admin-user-name').innerText = displayName;
+
+                        // 2. Set the top grey text to the user's actual role (ADMIN, CHEF, or RIDER)
+                        const roleLabel = document.getElementById('user-role-label');
+                        if (roleLabel) {
+                            roleLabel.innerText = userRole.toUpperCase();
+                        }
+
+                        // --- NEW: UI ROLE RESTRICTIONS (Bulletproof Hide) ---
                         const riderTab = document.getElementById('tab-rider');
-                        if (userRole === "chef") {
-                            // Hide the Rider tab completely for chefs
-                            riderTab.classList.add('hidden');
-                        } else {
-                            // Show it for Admins (and future Riders)
-                            riderTab.classList.remove('hidden');
+                        const kitchenTab = document.getElementById('tab-kitchen');
+
+                        if (riderTab && kitchenTab) {
+                            if (userRole === "chef") {
+                                // Forcibly hide Rider tab for Chefs
+                                riderTab.style.display = "none";
+                                kitchenTab.style.display = "flex";
+                                switchTab('kitchen'); // Force them onto the kitchen view
+                            } else if (userRole === "rider") {
+                                // Forcibly hide Kitchen tab for Riders
+                                kitchenTab.style.display = "none";
+                                riderTab.style.display = "flex";
+                                switchTab('rider'); // Force them onto the rider view
+                            } else {
+                                // Admins see everything
+                                riderTab.style.display = "flex";
+                                kitchenTab.style.display = "flex";
+                            }
                         }
                         // ---------------------------------
 
@@ -205,6 +236,12 @@
                     alert("Error verifying permissions. Please contact the CTO.");
                 }
             } else {
+                // --- THE LOGOUT FIX: Turn off the live listener! ---
+                if (window.orderListener) {
+                    window.orderListener(); // This kills the active connection
+                    window.orderListener = null;
+                }
+
                 loginSection.classList.remove('hidden');
                 dashboardSection.classList.add('hidden');
                 dashboardSection.classList.remove('flex');
@@ -268,7 +305,7 @@
         // ==========================================
         let orderListener = null;
 
-      window.startOrderListener = function () {
+        window.startOrderListener = function () {
             const kitchenGrid = document.getElementById('live-orders-grid');
             const riderGrid = document.getElementById('rider-orders-grid');
 
@@ -288,27 +325,45 @@
 
                     querySnapshot.forEach((documentSnapshot) => {
                         const rawOrder = { id: documentSnapshot.id, ...documentSnapshot.data() };
-                        
+
                         // --- THE FIX: Match the exact labels sent by the checkout script ---
-                        const currentStatus = rawOrder.status || "pending"; 
+                        const currentStatus = rawOrder.status || "pending";
                         const currentTotal = rawOrder.totalAmount || 0;
-                        
-                        // --- 1. THE CHEF FILTER ---
+
+                        // --- 1. THE CHEF & RIDER FILTERS ---
                         let myItems = rawOrder.items || [];
 
                         if (window.currentUserRole === "chef") {
                             // Filter the cart to ONLY include items tagged with this chef's email
                             myItems = myItems.filter(item => item.ownerEmail === window.currentStaffEmail);
-                            
+
                             // If this order has NONE of their food, skip this order entirely!
-                            if (myItems.length === 0) return; 
+                            if (myItems.length === 0) return;
+
+                        } else if (window.currentUserRole === "rider") {
+                            // Check if ANY item in this order is located in the rider's assigned zone
+                            const hasItemsInMyZone = myItems.some(item => item.pickupZone === window.currentRiderZone);
+
+                            // If the order has no food from their zone, skip this order entirely!
+                            if (!hasItemsInMyZone) return;
                         }
 
-                        // --- 2. THE PRICE RECALCULATOR ---
-                        let displayTotal = currentTotal;
+                        // --- 2. THE PRICE RECALCULATOR (Vendor Commission Update) ---
+                        let displayTotal = currentTotal; // Admins and Riders see the full customer payment
+                        let totalLabel = "Total";
+
                         if (window.currentUserRole === "chef") {
-                            // Calculate total ONLY for the items this specific chef is cooking
-                            displayTotal = myItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
+                            // 1. Calculate the raw subtotal for ONLY the food this specific chef is cooking
+                            const chefRawSubtotal = myItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
+
+                            // 2. Calculate the 10% Platform Fee 
+                            const chefPlatformFee = Math.ceil(chefRawSubtotal * 0.10);
+
+                            // 3. Set the display total to the chef's actual take-home pay
+                            displayTotal = chefRawSubtotal - chefPlatformFee;
+
+                            // Change the label so they know this is their cut!
+                            totalLabel = "Your Payout";
                         }
 
                         // --- 3. XSS SANITIZER ---
@@ -327,7 +382,10 @@
                                 <div class="flex justify-between items-start border-b border-white/10 pb-4 mb-4">
                                     <div>
                                         <span class="text-[10px] text-stone-400 font-bold uppercase tracking-wider block mb-1">ID: ${rawOrder.id.slice(0, 6)}</span>
-                                        <span class="text-sm text-stone-300">Total: <strong class="text-white">Ksh ${displayTotal.toLocaleString()}</strong></span>
+                                        
+                                        <!-- THE NEW DYNAMIC LABEL AND TOTAL -->
+                                        <span class="text-sm text-stone-300">${totalLabel}: <strong class="text-white">Ksh ${displayTotal.toLocaleString()}</strong></span>
+                                        
                                     </div>
                                     <span class="px-2.5 py-1 rounded-md text-[10px] font-bold text-white uppercase tracking-wider STATUS_COLOR">
                                         ${currentStatus}

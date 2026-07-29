@@ -679,10 +679,6 @@
                 <span>Subtotal</span>
                 <span id="cart-subtotal" class="font-medium text-stone-300">Ksh 0</span>
             </div>
-            <div class="flex justify-between text-sm text-stone-400 mb-2">
-                <span>Platform Fee (10%)</span>
-                <span id="cart-platform-fee" class="text-white font-medium">Ksh 0</span>
-            </div>
             <div class="flex justify-between text-sm text-stone-400">
                 <span>Delivery Fee</span>
                 <span id="cart-delivery-fee" class="font-medium text-stone-300">Ksh 0</span>
@@ -1394,7 +1390,8 @@
                 image: "https://images.unsplash.com/photo-1631515243349-e0cb75fb8d3a?q=80&w=600&auto=format&fit=crop",
                 bio: "Chef Ali learned the art of perfect Biriani from his grandmother. He specializes in slow-cooked, deeply spiced traditional Swahili meals made entirely from scratch.",
                 phone: "+254700000001", rawPrice: 850,
-                ownerEmail: "ali@test.com" // <--- Added
+                ownerEmail: "ali@test.com", // <--- Added
+                pickupZone: "Mombasa CBD"
             },
             {
                 tag: "#2 Most loved dish", topTitle: "CRISPY", bottomTitle: "VIAZI KARAI", chef: "Chef Amina", likes: 289, isLiked: false, category: "Street Food",
@@ -1402,7 +1399,8 @@
                 image: "https://images.unsplash.com/photo-1541529086526-db283c563270?q=80&w=600&auto=format&fit=crop",
                 bio: "Famous for her secret tamarind dip, Chef Amina has been perfecting Mombasa street food for over a decade. Her Viazi Karai is always fried fresh to order.",
                 phone: "+254700000002", rawPrice: 250,
-                ownerEmail: "amina@test.com" // <--- Added
+                ownerEmail: "amina@test.com", // <--- Added
+                pickupZone: "Nyali"
             },
             {
                 tag: "#3 Most loved dish", topTitle: "COASTAL", bottomTitle: "MABUYU", chef: "Mama Fatma", likes: 215, isLiked: false, category: "Sweet Treats",
@@ -1410,7 +1408,8 @@
                 image: "https://images.unsplash.com/photo-1515003197210-e0cd71810b5f?q=80&w=600&auto=format&fit=crop",
                 bio: "Mama Fatma’s Mabuyu is legendary. She sources the freshest baobab seeds and coats them in a perfectly balanced sweet and spicy syrup that keeps locals coming back.",
                 phone: "+254700000003", rawPrice: 150,
-                ownerEmail: "fatma@test.com" // <--- Added
+                ownerEmail: "fatma@test.com",
+                pickupZone: "Majengo"
             },
             {
                 tag: "#4 Most loved dish", topTitle: "ARTISANAL", bottomTitle: "SPICED CAKE", chef: "Chef Swalah", likes: 142, isLiked: false, category: "Sweet Treats",
@@ -1418,7 +1417,8 @@
                 image: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?q=80&w=600&auto=format&fit=crop",
                 bio: "Chef Swalah brings a modern twist to traditional coastal baking. He infuses high-quality ingredients with local spices like cardamom and cinnamon for unforgettable pastries.",
                 phone: "+254700000004", rawPrice: 1500,
-                ownerEmail: "swalah@test.com" // <--- Added
+                ownerEmail: "swalah@test.com", // <--- Added
+                pickupZone: "Tudor"
             }
         ];
 
@@ -1548,7 +1548,12 @@
                     id: currentOrderIndex,
                     title: dish.topTitle + (dish.bottomTitle ? " " + dish.bottomTitle : ""),
                     chef: dish.chef,
-                    ownerEmail: dish.ownerEmail, // <--- THE NEW SECRET TAG!
+                    ownerEmail: dish.ownerEmail,
+                    
+                    // --- THE NEW LOCATION TAG ---
+                    pickupZone: dish.pickupZone || "Unassigned", 
+                    // ----------------------------
+                    
                     price: dish.rawPrice,
                     qty: currentQty,
                     image: dish.image
@@ -1667,13 +1672,7 @@
                 subtotal += item.price * item.qty;
             });
 
-            // 1. Calculate the 10% Platform Fee (Rounded up to nearest whole shilling)
-            let platformFee = 0;
-            if (subtotal > 0) {
-                platformFee = Math.ceil(subtotal * 0.10);
-            }
-
-            // 2. Get the Delivery Fee from the dropdown
+            // 1. Get the Delivery Fee from the dropdown
             const deliveryDropdown = document.getElementById('delivery-area');
             let deliveryFee = 0;
 
@@ -1681,24 +1680,18 @@
                 deliveryFee = parseInt(deliveryDropdown.value);
             }
 
-            // THE FIX: If the cart is completely empty, wipe out the delivery fee so it doesn't get stuck!
+            // If the cart is completely empty, wipe out the delivery fee so it doesn't get stuck!
             if (subtotal === 0) {
                 deliveryFee = 0;
             }
 
-            // 3. Calculate Final Total (Subtotal + Delivery + Platform Fee)
-            const total = subtotal + deliveryFee + platformFee;
+            // 2. Calculate Final Total (Food Subtotal + Delivery ONLY)
+            const total = subtotal + deliveryFee;
 
-            // 4. Update the UI Prices
+            // 3. Update the UI Prices
             document.getElementById('cart-subtotal').innerText = `Ksh ${subtotal}`;
             document.getElementById('cart-delivery-fee').innerText = `Ksh ${deliveryFee}`;
             document.getElementById('cart-total-price').innerText = `Ksh ${total}`;
-
-            // Try to update the Platform Fee UI (Requires HTML update in Step 2)
-            const platformFeeEl = document.getElementById('cart-platform-fee');
-            if (platformFeeEl) {
-                platformFeeEl.innerText = `Ksh ${platformFee}`;
-            }
 
             // Update the floating cart badge in the Nav bar
             let totalItems = 0;
@@ -1708,7 +1701,7 @@
             });
 
             // ==========================================
-            // 5. THE 100 KSH MINIMUM ORDER BOUNCER
+            // 4. THE 100 KSH MINIMUM ORDER BOUNCER
             // ==========================================
             const checkoutBtn = document.getElementById('checkout-btn');
 
@@ -1791,11 +1784,17 @@
                     closePaymentModal();
 
                     // ==========================================
-                    // FIREBASE DATABASE INJECTION
+                    // FIREBASE DATABASE INJECTION (UPDATED MATH)
                     // ==========================================
                     try {
-                        const finalTotal = document.getElementById('payment-amount-display').innerText;
-                        const rawTotal = parseInt(finalTotal.replace(/[^0-9]/g, '')) || 0;
+                        // 1. Calculate the core math directly from the cart
+                        const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+                        const deliveryFee = parseInt(document.getElementById('delivery-area').value) || 0;
+                        const customerTotal = subtotal + deliveryFee;
+
+                        // 2. THE BACKEND SPLIT (Vendor Commission)
+                        const platformFee = Math.ceil(subtotal * 0.10);
+                        const chefPayout = subtotal - platformFee;
 
                         // Grab Location Area
                         const deliveryTextSpan = document.getElementById('delivery-selected-text');
@@ -1810,18 +1809,26 @@
                         const orderDate = (dateInput && dateInput.value) ? dateInput.value : "Today";
                         const orderTime = (timeInput && timeInput.value) ? timeInput.value : "ASAP";
 
-                        // --- THE NEW FIX: Grab Delivery Notes ---
+                        // Grab Delivery Notes
                         const notesInput = document.getElementById('delivery-notes');
                         const notes = (notesInput && notesInput.value.trim() !== "") ? notesInput.value : "No specific instructions.";
 
-                        // Build the Order Ticket
+                        // Build the Order Ticket with the new financial data
                         const orderTicket = {
                             customerEmail: window.auth.currentUser ? window.auth.currentUser.email : "Guest",
                             customerPhone: phoneInput,
-                            paymentMethod: "M-Pesa",    // <--- Added Payment Method
-                            deliveryNotes: notes,       // <--- Added Delivery Notes
+                            paymentMethod: "M-Pesa",
+                            deliveryNotes: notes,
                             items: cart,
-                            totalAmount: rawTotal,
+
+                            // --- NEW FINANCIAL DATA STRUCTURE ---
+                            totalAmount: customerTotal, // What the customer pays
+                            foodSubtotal: subtotal,     // Raw cost of food
+                            deliveryFee: deliveryFee,   // Rider's cut
+                            platformFee: platformFee,   // Your 10% CTO cut
+                            chefPayout: chefPayout,     // What the chef receives
+                            // ------------------------------------
+
                             status: "pending",
                             deliveryArea: locationName,
                             deliveryDate: orderDate,
@@ -1850,102 +1857,13 @@
                     btn.classList.add('bg-green-500', 'hover:bg-green-400');
                     btn.classList.remove('bg-white');
                     document.getElementById('mpesa-number').value = '';
+                    if (document.getElementById('delivery-notes')) document.getElementById('delivery-notes').value = '';
 
                 }, 1200);
 
             }, 2000);
         }
-
-
-        async function processFirebaseOrder() {
-            if (cart.length === 0) {
-                alert("Please add items to your cart first!");
-                return;
-            }
-
-            const currentUser = window.auth ? window.auth.currentUser : null;
-            if (!currentUser) {
-                alert("You must be logged in to place an order!");
-                closeCart();
-                openAuth('login');
-                return;
-            }
-
-            const deliveryDate = document.getElementById('delivery-date').value;
-            const deliveryPhone = document.getElementById('delivery-phone').value;
-            const deliveryArea = document.getElementById('delivery-selected-text').innerText;
-            const paymentMethod = document.getElementById('payment-selected-text').innerText;
-            const grandTotalText = document.getElementById('cart-total-price').innerText;
-
-            // This uses Regex to delete everything that IS NOT a number, then converts it to an integer
-            const grandTotalNumber = parseInt(grandTotalText.replace(/[^0-9]/g, ''), 10);
-
-            // --- UX POINT 2: PHONE VALIDATION ---
-            // Remove any accidental spaces the user typed
-            const cleanPhone = deliveryPhone.replace(/\s+/g, '');
-
-            // Check if it's a valid 10-digit (07... or 01...) or 13-character (+254...) Kenyan number
-            const isValidPhone = /^(07|01)\d{8}$/.test(cleanPhone) || /^\+254(7|1)\d{8}$/.test(cleanPhone);
-
-            if (!isValidPhone) {
-                alert("Please enter a valid Kenyan phone number (e.g., 0712345678).");
-                return;
-            }
-
-            if (!deliveryDate || deliveryArea === "Select your area...") {
-                alert("Please fill in all delivery details.");
-                return;
-            }
-
-            // --- UX POINT 1: THE BUTTON LOCK ---
-            const checkoutBtn = document.getElementById('checkout-btn');
-            const originalBtnHTML = checkoutBtn.innerHTML; // Save the original text and icon
-
-            checkoutBtn.disabled = true;
-            checkoutBtn.classList.add('opacity-75', 'cursor-not-allowed');
-            checkoutBtn.innerHTML = `
-                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Processing...
-            `;
-
-            const orderPayload = {
-                customerEmail: currentUser.email,
-                customerPhone: cleanPhone,
-                items: cart,
-                deliveryDate: deliveryDate,
-                deliveryTime: document.getElementById('delivery-time').value,
-                deliveryArea: deliveryArea,
-                paymentMethod: paymentMethod,
-                totalPrice: grandTotalNumber, // <--- FIXED: Now sending the pure integer!
-                orderStatus: "Pending",
-                timestamp: window.serverTimestamp()
-            };
-
-            try {
-                const docRef = await window.addDoc(window.collection(window.db, "orders"), orderPayload);
-                alert(`Awesome! Your order has been placed successfully.\nOrder ID: ${docRef.id}`);
-
-                cart = [];
-                updateCartBadge();
-                renderCart();
-                closeCart();
-
-            } catch (error) {
-                console.error("Error adding document: ", error);
-                alert("There was an error processing your order. Please try again.");
-            } finally {
-                // --- RELEASE THE LOCK ---
-                // No matter what happens (success or failure), restore the button back to normal
-                if (checkoutBtn) {
-                    checkoutBtn.disabled = false;
-                    checkoutBtn.classList.remove('opacity-75', 'cursor-not-allowed');
-                    checkoutBtn.innerHTML = originalBtnHTML;
-                }
-            }
-        }
+        
         // ==========================================
         // NEW: MOBILE NAV DRAWER LOGIC
         // ==========================================
@@ -2459,11 +2377,18 @@
         // ==========================================
         async function submitFinalOrder(paymentType) {
             try {
-                // THE FIX: Calculate the exact total securely from the cart data!
+                // 1. Calculate the core math
                 const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-                const platformFee = Math.round(subtotal * 0.10);
                 const deliveryFee = parseInt(document.getElementById('delivery-area').value) || 0;
-                const rawTotal = subtotal + platformFee + deliveryFee;
+
+                // 2. What the customer actually pays (Food + Delivery ONLY)
+                const customerTotal = subtotal + deliveryFee;
+
+                // 3. THE BACKEND SPLIT (Vendor Commission)
+                // Platform takes 10% of the food cost
+                const platformFee = Math.ceil(subtotal * 0.10);
+                // Chef keeps the remaining amount of the food cost
+                const chefPayout = subtotal - platformFee;
 
                 // Grab Location
                 const deliveryTextSpan = document.getElementById('delivery-selected-text');
@@ -2482,14 +2407,22 @@
                 const notes = (notesInput && notesInput.value.trim() !== "") ? notesInput.value : "No specific instructions.";
                 const phoneInput = document.getElementById('delivery-phone').value || "N/A";
 
-                // Build the Order Ticket
+                // Build the Order Ticket with the new financial data
                 const orderTicket = {
                     customerEmail: window.auth && window.auth.currentUser ? window.auth.currentUser.email : "Guest",
                     customerPhone: phoneInput,
                     paymentMethod: paymentType,
                     deliveryNotes: notes,
                     items: cart,
-                    totalAmount: rawTotal, // Now it correctly pushes the math!
+
+                    // --- NEW FINANCIAL DATA STRUCTURE ---
+                    totalAmount: customerTotal, // What the customer pays
+                    foodSubtotal: subtotal,     // Raw cost of food
+                    deliveryFee: deliveryFee,   // Rider's cut
+                    platformFee: platformFee,   // Your 10% CTO cut
+                    chefPayout: chefPayout,     // What the chef receives
+                    // ------------------------------------
+
                     status: "pending",
                     deliveryArea: locationName,
                     deliveryDate: orderDate,
@@ -2500,7 +2433,7 @@
                 // Push to Firestore
                 await window.addDoc(window.collection(window.db, "orders"), orderTicket);
 
-                alert("Order successfully placed with Cash on Delivery!");
+                alert("Order successfully placed!");
 
                 // Close drawer and reset UI
                 closeCart();
@@ -2515,18 +2448,6 @@
                 alert("Failed to sync order to database. Check console.");
             }
         }
-        document.addEventListener('click', (event) => {
-            const dropdownBtn = document.getElementById('date-dropdown-btn');
-            const dropdownList = document.getElementById('date-options-list');
-
-            // If both elements exist on the screen
-            if (dropdownBtn && dropdownList) {
-                // Check if the user clicked OUTSIDE of both the button and the list
-                if (!dropdownBtn.contains(event.target) && !dropdownList.contains(event.target)) {
-                    dropdownList.classList.add('hidden'); // Hide the dropdown
-                }
-            }
-        });
     </script>
 </body>
 
