@@ -1056,7 +1056,6 @@
         // FETCH USER ORDERS (OPTIMIZED FOR FIREBASE FREE TIER)
         // =============================================================
 
-        // NEW: Global variables to track BOTH open pipes
         window.unsubscribeActiveOrders = null;
         window.unsubscribePastOrders = null;
 
@@ -1064,13 +1063,65 @@
             const activeContainer = document.getElementById('active-orders-container');
             const pastContainer = document.getElementById('past-orders-container');
 
-            // Show initial loading text
             activeContainer.innerHTML = `<div class="text-xs text-stone-500 animate-pulse">Checking active orders...</div>`;
             pastContainer.innerHTML = `<div class="text-xs text-stone-500 animate-pulse">Loading history...</div>`;
 
-            // NEW: Kill existing listeners if they are already running to prevent duplicates!
             if (typeof window.unsubscribeActiveOrders === 'function') window.unsubscribeActiveOrders();
             if (typeof window.unsubscribePastOrders === 'function') window.unsubscribePastOrders();
+
+            // ---------------------------------------------------------
+            // HELPER FUNCTION: GROUP TICKETS INTO MASTER ORDERS
+            // ---------------------------------------------------------
+            function processSnapshotToMasterOrders(snapshot) {
+                const masterOrders = {};
+
+                snapshot.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    const docId = docSnap.id;
+                    
+                    // Fallback to docId if masterOrderId is missing (for older orders)
+                    const masterId = data.masterOrderId || docId; 
+
+                    if (!masterOrders[masterId]) {
+                        masterOrders[masterId] = {
+                            masterId: masterId,
+                            timestamp: data.timestamp,
+                            deliveryArea: data.deliveryArea || "Pickup",
+                            paymentMethod: data.paymentMethod || "M-Pesa",
+                            baseDeliveryFee: data.deliveryFee || 0,
+                            uniqueZones: {},
+                            totalFoodSubtotal: 0,
+                            items: [],
+                            allStatuses: []
+                        };
+                    }
+
+                    const group = masterOrders[masterId];
+                    
+                    // 1. Track unique zones to calculate the delivery fee accurately
+                    const zone = data.pickupZone || "Main Kitchen";
+                    group.uniqueZones[zone] = true;
+                    
+                    // 2. Sum up the raw food costs
+                    group.totalFoodSubtotal += (data.foodSubtotal || 0);
+                    
+                    // 3. Keep track of statuses to figure out overall progress
+                    const rawStatus = data.status ? data.status.toLowerCase() : "pending";
+                    group.allStatuses.push(rawStatus);
+
+                    // 4. Push items, attaching the specific chef's status to each one!
+                    if (data.items) {
+                        data.items.forEach(item => {
+                            group.items.push({
+                                ...item,
+                                individualStatus: rawStatus 
+                            });
+                        });
+                    }
+                });
+
+                return Object.values(masterOrders);
+            }
 
             // ---------------------------------------------------------
             // QUERY 1: LIVE ACTIVE ORDERS
@@ -1087,9 +1138,12 @@
                     activeContainer.innerHTML = `<div class="text-xs text-stone-500 bg-white/5 p-3 rounded-xl border border-white/5">No active orders right now. Time to buy some bread!</div>`;
                     return;
                 }
+                
+                const masterOrdersList = processSnapshotToMasterOrders(snapshot);
                 activeContainer.innerHTML = '';
-                snapshot.forEach((docSnap) => {
-                    activeContainer.innerHTML += buildUserOrderCard(docSnap.id, docSnap.data());
+                
+                masterOrdersList.forEach(masterOrder => {
+                    activeContainer.innerHTML += buildMasterOrderCard(masterOrder);
                 });
             }, (error) => {
                 console.error("Active feed error:", error);
@@ -1104,7 +1158,7 @@
                 where("customerEmail", "==", userEmail),
                 where("status", "==", "Delivered"),
                 orderBy("timestamp", "desc"),
-                limit(5)
+                limit(10) // Increased limit slightly since we are grouping them now
             );
 
             window.unsubscribePastOrders = onSnapshot(historyQuery, (snapshot) => {
@@ -1112,9 +1166,12 @@
                     pastContainer.innerHTML = `<div class="text-xs text-stone-600 italic">No past orders found.</div>`;
                     return;
                 }
+                
+                const masterOrdersList = processSnapshotToMasterOrders(snapshot);
                 pastContainer.innerHTML = '';
-                snapshot.forEach((docSnap) => {
-                    pastContainer.innerHTML += buildUserOrderCard(docSnap.id, docSnap.data());
+                
+                masterOrdersList.forEach(masterOrder => {
+                    pastContainer.innerHTML += buildMasterOrderCard(masterOrder);
                 });
             }, (error) => {
                 console.error("History feed error:", error);
@@ -1123,56 +1180,64 @@
         };
 
         // =============================================================
-        // HELPER: CARD GENERATOR WITH SYNCHRONIZED BADGE COLORS
+        // HELPER: MASTER CARD GENERATOR (CLEANED UP UI)
         // =============================================================
-        function buildUserOrderCard(orderId, order) {
-            const itemsList = order.items.map(i => `<li>• ${i.qty}x ${i.title}</li>`).join('');
+        function buildMasterOrderCard(masterOrder) {
+            
+            // 1. Calculate True Grand Total
+            const numZones = Object.keys(masterOrder.uniqueZones).length;
+            const totalDeliveryFee = masterOrder.baseDeliveryFee * numZones;
+            const grandTotal = masterOrder.totalFoodSubtotal + totalDeliveryFee;
+            
+            const displayTotal = `Ksh ${grandTotal.toLocaleString()}`;
 
-            // THE FIX: Match the new status label and handle lowercase
-            const currentStatus = order.status || "pending";
-
-            // Capitalize the first letter so "pending" looks like "Pending" on the UI
-            const displayStatus = currentStatus.charAt(0).toUpperCase() + currentStatus.slice(1);
-
-            let statusColor = "bg-stone-500";
-            if (currentStatus.toLowerCase() === "pending") statusColor = "bg-amber-500 text-[#1a110c]";
-            else if (currentStatus === "Preparing") statusColor = "bg-blue-500 text-white";
-            else if (currentStatus === "Ready for Delivery") statusColor = "bg-purple-500 text-white";
-            else if (currentStatus === "Out for Delivery") statusColor = "bg-orange-500 text-white";
-            else if (currentStatus === "Delivered") statusColor = "bg-green-500/20 text-green-400 border border-green-500/30";
-
-            // THE FIX: Grab the new totalAmount and format it with commas
-            const displayTotal = order.totalAmount ? `Ksh ${order.totalAmount.toLocaleString()}` : "Calculating...";
-
-            // THE FIX: Convert Firebase timestamp to a readable date
+            // 2. Format Date
             let displayDate = "Today";
-            if (order.timestamp && order.timestamp.toDate) {
-                displayDate = order.timestamp.toDate().toLocaleDateString();
+            if (masterOrder.timestamp && masterOrder.timestamp.toDate) {
+                displayDate = masterOrder.timestamp.toDate().toLocaleDateString();
             }
 
-            // ADDED: Fallback just in case paymentMethod is missing on older orders
-            const paymentMethod = order.paymentMethod || "M-Pesa";
+            // NOTE: The "overallStatus" and "headerColor" logic was completely deleted here!
 
+            // 3. Build the Items List with DISTINCT tracking colors
+            const itemsList = masterOrder.items.map(i => {
+                
+                // Set distinctly different colors for every phase
+                let iColor = "text-stone-400"; // PENDING (Neutral/Soft)
+                
+                if (i.individualStatus === "preparing") iColor = "text-blue-400"; // PREPARING (Blue)
+                if (i.individualStatus === "ready for delivery") iColor = "text-purple-400"; // READY (Purple)
+                if (i.individualStatus === "out for delivery") iColor = "text-orange-500"; // OUT FOR DELIVERY (Vibrant Orange)
+                if (i.individualStatus === "delivered") iColor = "text-green-400"; // DELIVERED (Green)
+                
+                // Capitalize status for display
+                const capStatus = i.individualStatus.charAt(0).toUpperCase() + i.individualStatus.slice(1);
+                
+                return `
+                <li class="flex justify-between items-center py-0.5">
+                    <span>• ${i.qty}x ${i.title}</span>
+                    <span class="text-[9px] uppercase tracking-wider font-bold ${iColor}">[${capStatus}]</span>
+                </li>`;
+            }).join('');
+
+            // 4. Output the single beautiful HTML card (Master Tag Removed)
             return `
-                <div class="bg-black/20 border border-white/5 p-4 rounded-xl space-y-3">
+                <div class="bg-black/20 border border-white/5 p-4 rounded-xl space-y-3 mb-3 relative overflow-hidden">
                     <div class="flex justify-between items-start">
                         <div>
-                            <span class="text-[9px] text-stone-500 block">ID: ${orderId.slice(0, 6).toUpperCase()}</span>
-                            <span class="text-xs text-stone-300 font-semibold">${order.deliveryArea || "Pickup"}</span>
-                            <!-- THE NEW PAYMENT METHOD LINE -->
-                            <p class="text-[10px] text-stone-400 mt-1 uppercase tracking-wider">💳 ${paymentMethod}</p>
+                            <span class="text-[9px] text-stone-500 block">MASTER ID: ${masterOrder.masterId.slice(0, 6).toUpperCase()}</span>
+                            <span class="text-xs text-stone-300 font-semibold">${masterOrder.deliveryArea}</span>
+                            <p class="text-[10px] text-stone-400 mt-1 uppercase tracking-wider">💳 ${masterOrder.paymentMethod}</p>
                         </div>
-                        <span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${statusColor}">
-                            ${displayStatus}
-                        </span>
+                        <!-- The conflicting Master Tag has been completely removed -->
                     </div>
                     
-                    <ul class="text-xs text-stone-400 space-y-1 border-t border-white/5 pt-2">
+                    <ul class="text-xs text-stone-400 space-y-1 border-t border-white/5 pt-2 pb-1">
                         ${itemsList}
                     </ul>
                     
-                    <div class="text-[10px] text-stone-500 flex justify-between items-center pt-1">
-                        <span>Total: <strong class="text-white">${displayTotal}</strong></span>
+                    <div class="text-[10px] text-stone-500 flex justify-between items-center border-t border-white/5 pt-2 mt-2">
+                        <span>Grand Total: <strong class="text-white">${displayTotal}</strong></span>
                         <span>${displayDate}</span>
                     </div>
                 </div>
@@ -1487,30 +1552,30 @@
 
         // Seller Modal
         function openSellerModal() {
-            document.getElementById('seller-chef-name').innerText = topDishes[currentIndex].chef; 
-            document.getElementById('seller-bio').innerText = topDishes[currentIndex].bio; 
+            document.getElementById('seller-chef-name').innerText = topDishes[currentIndex].chef;
+            document.getElementById('seller-bio').innerText = topDishes[currentIndex].bio;
             document.getElementById('seller-phone').href = "tel:" + topDishes[currentIndex].phone;
-            
+
             document.getElementById('seller-modal').classList.remove('hidden');
-            
+
             // --- ADDED: Freeze the background scroll ---
             document.body.classList.add('overflow-hidden');
 
-            setTimeout(() => { 
-                document.getElementById('seller-modal-content').classList.remove('scale-95', 'opacity-0'); 
-                document.getElementById('seller-modal-content').classList.add('scale-100', 'opacity-100'); 
+            setTimeout(() => {
+                document.getElementById('seller-modal-content').classList.remove('scale-95', 'opacity-0');
+                document.getElementById('seller-modal-content').classList.add('scale-100', 'opacity-100');
             }, 10);
         }
 
         function closeSellerModal() {
-            document.getElementById('seller-modal-content').classList.remove('scale-100', 'opacity-100'); 
+            document.getElementById('seller-modal-content').classList.remove('scale-100', 'opacity-100');
             document.getElementById('seller-modal-content').classList.add('scale-95', 'opacity-0');
-            
+
             // --- ADDED: Unfreeze the background scroll instantly ---
             document.body.classList.remove('overflow-hidden');
 
-            setTimeout(() => { 
-                document.getElementById('seller-modal').classList.add('hidden'); 
+            setTimeout(() => {
+                document.getElementById('seller-modal').classList.add('hidden');
             }, 300);
         }
 
@@ -1646,12 +1711,59 @@
             updateCartBadge(); renderCart();
         }
 
+        function updateCartTotal() {
+            let subtotal = 0;
+            const groupedCart = {}; // We need to count zones here too!
+
+            cart.forEach(item => {
+                subtotal += item.price * item.qty;
+                const zone = item.pickupZone || "Main Kitchen";
+                groupedCart[zone] = true; // Just marking that this zone exists in the cart
+            });
+
+            // 1. Get the Base Delivery Fee from the dropdown
+            const deliveryDropdown = document.getElementById('delivery-area');
+            let baseDeliveryFee = 0;
+
+            if (deliveryDropdown && deliveryDropdown.value !== "0") {
+                baseDeliveryFee = parseInt(deliveryDropdown.value);
+            }
+
+            // 2. Count the Unique Zones and Multiply!
+            let numZones = Object.keys(groupedCart).length;
+            let totalDeliveryFee = baseDeliveryFee * numZones;
+
+            // If the cart is completely empty, wipe out the delivery fee
+            if (subtotal === 0) {
+                totalDeliveryFee = 0;
+                numZones = 0;
+            }
+
+            // 3. Calculate Final Total
+            const total = subtotal + totalDeliveryFee;
+
+            // 4. Update the UI Prices
+            document.getElementById('cart-subtotal').innerText = `Ksh ${subtotal.toLocaleString()}`;
+
+            // Show the customer exactly what they are paying for!
+            if (numZones > 1 && totalDeliveryFee > 0) {
+                document.getElementById('cart-delivery-fee').innerText = `Ksh ${totalDeliveryFee.toLocaleString()} (${numZones} Zones)`;
+            } else {
+                document.getElementById('cart-delivery-fee').innerText = `Ksh ${totalDeliveryFee.toLocaleString()}`;
+            }
+
+            document.getElementById('cart-total-price').innerText = `Ksh ${total.toLocaleString()}`;
+
+            // Update the floating cart badge in the Nav bar
+            let totalItems = 0;
+            cart.forEach(item => totalItems += item.qty);
+            document.querySelectorAll('.cart-badge').forEach(badge => {
+                badge.innerText = totalItems;
+            });
+        }
+
         function renderCart() {
             const container = document.getElementById('cart-items-container');
-            const subtotalEl = document.getElementById('cart-subtotal');
-            const deliveryEl = document.getElementById('cart-delivery-fee');
-            const totalEl = document.getElementById('cart-total-price');
-
             container.innerHTML = '';
 
             // If cart is empty, clear the display and reset all totals
@@ -1662,35 +1774,55 @@
                 <p class="font-medium">Your cart is empty.</p>
             </div>`;
 
-                // THE FIX: Force the math function to run so it updates the button and zeroes out the fees!
+                // Force the math function to run so it updates the button and zeroes out the fees!
                 updateCartTotal();
                 return;
             }
 
-            // If cart has items, render them
+            // --- THE MULTI-VENDOR GROUPING LOGIC ---
+            const groupedCart = {};
             cart.forEach(item => {
-                const itemTotal = item.price * item.qty;
-                container.innerHTML += `
-            <div class="flex items-center gap-3 bg-white/5 p-3 rounded-2xl border border-white/5">
-                <img src="${item.image}" class="w-14 h-14 rounded-full object-cover shadow-md" alt="${item.title}">
-                <div class="flex-1">
-                    <h4 class="text-sm font-bold text-white line-clamp-1">${item.title}</h4>
-                    <p class="text-[10px] text-amber-500 font-semibold mb-1.5">${item.chef}</p>
-                    <span class="text-sm font-bold text-white block">Ksh ${itemTotal.toLocaleString()}</span>
-                </div>
-                
-                <div class="flex flex-col items-center gap-1 bg-black/40 rounded-lg p-1 border border-white/5">
-                    <button onclick="updateCartQty(${item.id}, 1)" class="w-6 h-6 rounded-md bg-white/5 hover:bg-white/10 flex items-center justify-center text-white transition"><svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg></button>
-                    <span class="text-xs font-bold text-white">${item.qty}</span>
-                    <button onclick="updateCartQty(${item.id}, -1)" class="w-6 h-6 rounded-md bg-white/5 hover:bg-white/10 flex items-center justify-center text-white transition"><svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 12H4"></path></svg></button>
-                </div>
-
-                <button onclick="removeItem(${item.id})" class="p-2 ml-1 text-stone-500 md:group-hover:text-red-500 transition bg-black/20 rounded-full md:group-hover:bg-red-500/10">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                </button>
-            </div>
-        `;
+                const zone = item.pickupZone || "Main Kitchen";
+                if (!groupedCart[zone]) groupedCart[zone] = [];
+                groupedCart[zone].push(item);
             });
+
+            // Loop through each location and render a header, then its items
+            for (const [zone, items] of Object.entries(groupedCart)) {
+
+                // 1. Add the Zone Header
+                container.innerHTML += `
+                <div class="mt-4 mb-2 flex items-center gap-2 px-1">
+                    <span class="text-amber-500"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg></span>
+                    <h3 class="text-xs font-bold text-stone-400 uppercase tracking-wider">Pickup: ${zone}</h3>
+                </div>
+                `;
+
+                // 2. Add the Items for this specific Zone
+                items.forEach(item => {
+                    const itemTotal = item.price * item.qty;
+                    container.innerHTML += `
+                    <div class="flex items-center gap-3 bg-white/5 p-3 rounded-2xl border border-white/5 mb-2">
+                        <img src="${item.image}" class="w-14 h-14 rounded-full object-cover shadow-md" alt="${item.title}">
+                        <div class="flex-1">
+                            <h4 class="text-sm font-bold text-white line-clamp-1">${item.title}</h4>
+                            <p class="text-[10px] text-amber-500 font-semibold mb-1.5">${item.chef}</p>
+                            <span class="text-sm font-bold text-white block">Ksh ${itemTotal.toLocaleString()}</span>
+                        </div>
+                        
+                        <div class="flex flex-col items-center gap-1 bg-black/40 rounded-lg p-1 border border-white/5">
+                            <button onclick="updateCartQty(${item.id}, 1)" class="w-6 h-6 rounded-md bg-white/5 hover:bg-white/10 flex items-center justify-center text-white transition"><svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg></button>
+                            <span class="text-xs font-bold text-white">${item.qty}</span>
+                            <button onclick="updateCartQty(${item.id}, -1)" class="w-6 h-6 rounded-md bg-white/5 hover:bg-white/10 flex items-center justify-center text-white transition"><svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 12H4"></path></svg></button>
+                        </div>
+
+                        <button onclick="removeItem(${item.id})" class="p-2 ml-1 text-stone-500 md:group-hover:text-red-500 transition bg-black/20 rounded-full md:group-hover:bg-red-500/10">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </div>
+                    `;
+                });
+            }
 
             // Run the math function to update the footer prices
             updateCartTotal();
@@ -1698,30 +1830,90 @@
 
         function updateCartTotal() {
             let subtotal = 0;
+            const groupedCart = {};
+
             cart.forEach(item => {
                 subtotal += item.price * item.qty;
+                const zone = item.pickupZone || "Main Kitchen";
+                groupedCart[zone] = true;
             });
 
-            // 1. Get the Delivery Fee from the dropdown
-            const deliveryDropdown = document.getElementById('delivery-area');
-            let deliveryFee = 0;
+            // 1. Count the Unique Zones
+            let numZones = Object.keys(groupedCart).length;
+            let multiplier = Math.max(1, numZones);
 
-            if (deliveryDropdown && deliveryDropdown.value !== "0") {
-                deliveryFee = parseInt(deliveryDropdown.value);
+            // 2. Get the Dropdown Elements
+            const deliveryDropdown = document.getElementById('delivery-area'); // The hidden input
+            const deliveryTextSpan = document.getElementById('delivery-selected-text'); // The visible text
+            const optionsList = document.getElementById('delivery-options-list'); // Your custom Tailwind <ul>
+
+            let baseDeliveryFee = 0;
+
+            // ==========================================
+            // FIX: THE "GHOST" CALCULATION
+            // ==========================================
+            if (deliveryTextSpan && deliveryTextSpan.innerText.includes("Select")) {
+                baseDeliveryFee = 0;
+                if (deliveryDropdown) deliveryDropdown.value = "0";
+            } else if (deliveryDropdown && deliveryDropdown.value !== "0") {
+                baseDeliveryFee = parseInt(deliveryDropdown.value);
             }
 
-            // If the cart is completely empty, wipe out the delivery fee so it doesn't get stuck!
+            // ==========================================
+            // NEW: CUSTOM TAILWIND DROPDOWN SYNC
+            // ==========================================
+            if (optionsList) {
+                const listItems = optionsList.getElementsByTagName('li');
+                Array.from(listItems).forEach(li => {
+                    const onclickStr = li.getAttribute('onclick');
+
+                    // We extract the base value hidden inside your onclick="selectDelivery(100, '...')"
+                    if (onclickStr) {
+                        const match = onclickStr.match(/selectDelivery\((\d+),\s*'([^']+)'\)/);
+                        if (match) {
+                            const baseValue = parseInt(match[1]); // e.g. 100
+                            const areaName = match[2].split('(')[0].trim(); // e.g. "Nyali"
+
+                            const newFee = baseValue * multiplier;
+                            const newText = `${areaName} (Ksh ${newFee})`;
+
+                            // Update the text the customer sees in the dropdown list
+                            li.innerText = newText;
+
+                            // Update the click function so the main text span gets the correct new text, 
+                            // but the hidden input still gets the BASE value (100) for the math!
+                            li.setAttribute('onclick', `selectDelivery(${baseValue}, '${newText}')`);
+                        }
+                    }
+                });
+            }
+
+            // Sync the currently selected text span too
+            if (deliveryTextSpan && deliveryDropdown && deliveryDropdown.value !== "0" && !deliveryTextSpan.innerText.includes("Select")) {
+                const areaName = deliveryTextSpan.innerText.split('(')[0].trim();
+                deliveryTextSpan.innerText = `${areaName} (Ksh ${baseDeliveryFee * multiplier})`;
+            }
+
+            // 3. Calculate Final Delivery Math
+            let totalDeliveryFee = baseDeliveryFee * numZones;
+
             if (subtotal === 0) {
-                deliveryFee = 0;
+                totalDeliveryFee = 0;
+                numZones = 0;
             }
 
-            // 2. Calculate Final Total (Food Subtotal + Delivery ONLY)
-            const total = subtotal + deliveryFee;
+            const total = subtotal + totalDeliveryFee;
 
-            // 3. Update the UI Prices
-            document.getElementById('cart-subtotal').innerText = `Ksh ${subtotal}`;
-            document.getElementById('cart-delivery-fee').innerText = `Ksh ${deliveryFee}`;
-            document.getElementById('cart-total-price').innerText = `Ksh ${total}`;
+            // 4. Update the UI Prices
+            document.getElementById('cart-subtotal').innerText = `Ksh ${subtotal.toLocaleString()}`;
+
+            if (numZones > 1 && totalDeliveryFee > 0) {
+                document.getElementById('cart-delivery-fee').innerText = `Ksh ${totalDeliveryFee.toLocaleString()} (${numZones} Zones)`;
+            } else {
+                document.getElementById('cart-delivery-fee').innerText = `Ksh ${totalDeliveryFee.toLocaleString()}`;
+            }
+
+            document.getElementById('cart-total-price').innerText = `Ksh ${total.toLocaleString()}`;
 
             // Update the floating cart badge in the Nav bar
             let totalItems = 0;
@@ -1731,33 +1923,30 @@
             });
 
             // ==========================================
-            // 4. THE 100 KSH MINIMUM ORDER BOUNCER
+            // 5. THE 100 KSH MINIMUM ORDER BOUNCER
             // ==========================================
             const checkoutBtn = document.getElementById('checkout-btn');
 
             if (checkoutBtn) {
                 if (subtotal > 0 && subtotal < 100) {
-                    // Cart has items, but under 100 Ksh -> Lock the button
                     checkoutBtn.disabled = true;
                     checkoutBtn.classList.add('opacity-50', 'cursor-not-allowed');
                     checkoutBtn.innerText = `Minimum Order: 100 Ksh (Add Ksh ${100 - subtotal})`;
                 } else if (subtotal === 0) {
-                    // Cart is empty -> Lock the button
                     checkoutBtn.disabled = true;
                     checkoutBtn.classList.add('opacity-50', 'cursor-not-allowed');
                     checkoutBtn.innerText = "Cart is Empty";
                 } else {
-                    // Cart is 100 Ksh or more! -> Unlock the button
                     checkoutBtn.disabled = false;
                     checkoutBtn.classList.remove('opacity-50', 'cursor-not-allowed');
                     checkoutBtn.innerText = "Proceed to Checkout";
                 }
             }
         }
+
         // ==========================================
         // MOCK PAYMENT SIMULATION (PHASE 3)
         // ==========================================
-
         function openPaymentModal() {
             // 1. Grab the final total from the cart
             const finalTotal = document.getElementById('cart-total-price').innerText;
@@ -1772,7 +1961,7 @@
                 document.getElementById('payment-modal-content').classList.remove('scale-95', 'opacity-0');
                 document.getElementById('payment-modal-content').classList.add('scale-100', 'opacity-100');
             }, 10);
-        }
+        } // <--- Now THIS is the only closing bracket, perfectly containing everything!
 
         function closePaymentModal() {
             document.getElementById('payment-modal-content').classList.remove('scale-100', 'opacity-100');
@@ -1781,7 +1970,6 @@
                 document.getElementById('payment-modal').classList.add('hidden');
             }, 300);
         }
-
         async function simulatePayment() {
             const phoneInput = document.getElementById('mpesa-number').value;
 
@@ -2150,11 +2338,11 @@
             document.getElementById('payment-options-list').classList.add('hidden');
         }
 
-       // ==========================================
+        // ==========================================
         // UPGRADED: Close dropdowns if user clicks anywhere else
         // ==========================================
         document.addEventListener('click', function (event) {
-            
+
             // 1. Delivery Area/Zone Dropdown
             const deliveryBtn = document.getElementById('delivery-dropdown-btn');
             const deliveryList = document.getElementById('delivery-options-list');
@@ -2175,7 +2363,7 @@
             if (dateBtn && dateList && !dateBtn.contains(event.target) && !dateList.contains(event.target)) {
                 dateList.classList.add('hidden');
             }
-            
+
         });
         // --- UI CONTROLS FOR MY ORDERS ---
         function openMyOrders() {
@@ -2417,69 +2605,102 @@
             window.generateSmartDates();
         });
         // ==========================================
-        // CASH ON DELIVERY (DIRECT INJECTION)
+        // MULTI-VENDOR CHECKOUT (SUB-ORDER ARCHITECTURE)
         // ==========================================
         async function submitFinalOrder(paymentType) {
             try {
-                // 1. Calculate the core math
-                const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-                const deliveryFee = parseInt(document.getElementById('delivery-area').value) || 0;
+                // 1. Group the cart items by their CHEF (ownerEmail) instead of Zone!
+                const groupedCart = {};
+                const uniqueZonesTracker = {}; // We use this to still calculate the delivery fee accurately
 
-                // 2. What the customer actually pays (Food + Delivery ONLY)
-                const customerTotal = subtotal + deliveryFee;
+                cart.forEach(item => {
+                    // Group by Chef Email
+                    const chefEmail = item.ownerEmail || "unknown@chef.com"; 
+                    if (!groupedCart[chefEmail]) {
+                        groupedCart[chefEmail] = [];
+                    }
+                    groupedCart[chefEmail].push(item);
+                    
+                    // Keep track of the unique zones for the customer's delivery fee math
+                    const zone = item.pickupZone || "Main Kitchen";
+                    uniqueZonesTracker[zone] = true;
+                });
 
-                // 3. THE BACKEND SPLIT (Vendor Commission)
-                // Platform takes 10% of the food cost
-                const platformFee = Math.ceil(subtotal * 0.10);
-                // Chef keeps the remaining amount of the food cost
-                const chefPayout = subtotal - platformFee;
+                const uniqueChefs = Object.keys(groupedCart);
+                const numZones = Object.keys(uniqueZonesTracker).length;
 
-                // Grab Location
+                // 2. Calculate the base delivery fee
+                const baseDeliveryFee = parseInt(document.getElementById('delivery-area').value) || 0;
+                
+                // Grab Shared Order Details (Location, Date, Time, Phone, Notes)
                 const deliveryTextSpan = document.getElementById('delivery-selected-text');
                 let locationName = "Pickup";
                 if (deliveryTextSpan && deliveryTextSpan.innerText !== "Select your area...") {
                     locationName = deliveryTextSpan.innerText.split('(')[0].trim();
                 }
-
-                // Grab Date, Time, Notes, Phone
                 const dateInput = document.getElementById('delivery-date');
                 const timeInput = document.getElementById('delivery-time');
                 const orderDate = (dateInput && dateInput.value) ? dateInput.value : "Today";
                 const orderTime = (timeInput && timeInput.value) ? timeInput.value : "ASAP";
-
                 const notesInput = document.getElementById('delivery-notes');
                 const notes = (notesInput && notesInput.value.trim() !== "") ? notesInput.value : "No specific instructions.";
                 const phoneInput = document.getElementById('delivery-phone').value || "N/A";
 
-                // Build the Order Ticket with the new financial data
-                const orderTicket = {
-                    customerEmail: window.auth && window.auth.currentUser ? window.auth.currentUser.email : "Guest",
-                    customerPhone: phoneInput,
-                    paymentMethod: paymentType,
-                    deliveryNotes: notes,
-                    items: cart,
+                // Generate a single Master Order ID for the customer's receipt
+                const masterOrderId = Math.random().toString(36).substring(2, 8).toUpperCase();
 
-                    // --- NEW FINANCIAL DATA STRUCTURE ---
-                    totalAmount: customerTotal, // What the customer pays
-                    foodSubtotal: subtotal,     // Raw cost of food
-                    deliveryFee: deliveryFee,   // Rider's cut
-                    platformFee: platformFee,   // Your 10% CTO cut
-                    chefPayout: chefPayout,     // What the chef receives
-                    // ------------------------------------
+                // 3. LOOP THROUGH EACH CHEF AND CREATE 100% INDEPENDENT ORDERS
+                for (const chefEmail of uniqueChefs) {
+                    const chefItems = groupedCart[chefEmail];
+                    
+                    // Grab the zone and name specifically for this chef's food
+                    const chefZone = chefItems[0].pickupZone || "Main Kitchen";
+                    const chefName = chefItems[0].chef.toUpperCase().replace(/\s+/g, '');
+                    
+                    // --- CHEF-SPECIFIC FINANCIAL MATH ---
+                    const chefSubtotal = chefItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
+                    const chefPlatformFee = Math.ceil(chefSubtotal * 0.10); 
+                    const chefPayout = chefSubtotal - chefPlatformFee;    
+                    const chefTotalAmount = chefSubtotal + baseDeliveryFee; 
+                    
+                    const subOrderId = `${masterOrderId}-${chefName}`;
 
-                    status: "pending",
-                    deliveryArea: locationName,
-                    deliveryDate: orderDate,
-                    deliveryTime: orderTime,
-                    timestamp: window.serverTimestamp()
-                };
+                    // Build the Sub-Order Ticket
+                    const orderTicket = {
+                        masterOrderId: masterOrderId,
+                        subOrderId: subOrderId,
+                        pickupZone: chefZone, 
+                        ownerEmail: chefEmail, // The strict identifier that separates them!
+                        customerEmail: window.auth && window.auth.currentUser ? window.auth.currentUser.email : "Guest",
+                        customerPhone: phoneInput,
+                        paymentMethod: paymentType,
+                        deliveryNotes: notes,
+                        items: chefItems, 
 
-                // Push to Firestore
-                await window.addDoc(window.collection(window.db, "orders"), orderTicket);
+                        // --- SPLIT FINANCIAL DATA ---
+                        totalAmount: chefTotalAmount, 
+                        foodSubtotal: chefSubtotal,  
+                        deliveryFee: baseDeliveryFee, 
+                        platformFee: chefPlatformFee, 
+                        chefPayout: chefPayout,   
+                        // ----------------------------
 
-                alert("Order successfully placed!");
+                        status: "pending",
+                        deliveryArea: locationName,
+                        deliveryDate: orderDate,
+                        deliveryTime: orderTime,
+                        timestamp: window.serverTimestamp()
+                    };
 
-                // Close drawer and reset UI
+                    // Push each ticket to Firestore independently!
+                    await window.addDoc(window.collection(window.db, "orders"), orderTicket);
+                }
+
+                // 4. Final Success Feedback
+                const totalCustomerCost = cart.reduce((sum, item) => sum + (item.price * item.qty), 0) + (baseDeliveryFee * numZones);
+                alert(`Order successfully placed! Total cost including ${numZones} pickup zone(s) delivery: Ksh ${totalCustomerCost.toLocaleString()}`);
+
+                // Close drawer and reset UI exactly as you had it
                 closeCart();
                 cart = [];
                 updateCartBadge();
