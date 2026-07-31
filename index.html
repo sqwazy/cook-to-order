@@ -1645,6 +1645,9 @@
                     chef: dish.chef,
                     ownerEmail: dish.ownerEmail,
 
+                    // --- THE NEW CHEF PHONE TAG ---
+                    chefPhone: dish.phone || "No Phone",
+
                     // --- THE NEW LOCATION TAG ---
                     pickupZone: dish.pickupZone || "Unassigned",
                     // ----------------------------
@@ -2530,6 +2533,11 @@
                         subOrderId: subOrderId,
                         pickupZone: chefZone,
                         ownerEmail: chefEmail, // The strict identifier that separates them!
+
+                        // --- THE NEW CHEF PHONE TAG ---
+                        chefPhone: chefItems[0].chefPhone || "No Phone",
+                        // ------------------------------
+
                         customerEmail: window.auth && window.auth.currentUser ? window.auth.currentUser.email : "Guest",
                         customerPhone: phoneInput,
                         paymentMethod: paymentType,

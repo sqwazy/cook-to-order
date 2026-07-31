@@ -366,12 +366,18 @@
                             totalLabel = "Your Payout";
                         }
 
-                        // --- 3. XSS SANITIZER ---
+                        // --- 3. XSS SANITIZER & DATA EXTRACTION ---
                         const safeEmail = sanitize(rawOrder.customerEmail);
                         const safePhone = sanitize(rawOrder.customerPhone || "No Phone");
                         const safeArea = sanitize(rawOrder.deliveryArea);
                         const safeDate = sanitize(rawOrder.deliveryDate || "Today");
                         const safeTime = sanitize(rawOrder.deliveryTime || "ASAP");
+
+                        // NEW: Extract Chef Details from the split ticket
+                        const chefEmail = sanitize(rawOrder.ownerEmail || "Unknown Chef");
+                        const chefName = sanitize(myItems[0]?.chef || "Unknown Chef"); // <--- PULLS THE REAL NAME
+                        const chefPhone = sanitize(rawOrder.chefPhone || "Not Provided");
+                        const pickupLocation = sanitize(rawOrder.pickupZone || "Pickup Zone");
 
                         // Build the items list using myItems, NOT the raw cart!
                         const itemsList = myItems.map(i => `<li class="text-sm text-stone-300">• ${i.qty}x ${i.title}</li>`).join('');
@@ -392,15 +398,37 @@
                                     </span>
                                 </div>
                                 <div class="flex-1 mb-2">
-                                    <div class="text-xs text-stone-300 space-y-1.5 bg-black/20 p-3 rounded-xl border border-white/5 mb-4">
-                                        <p>👤 ${safeEmail}</p>
-                                        <p>📞 <a href="tel:${safePhone}" class="text-amber-500 hover:underline">${safePhone}</a></p>
-                                        <p>📍 ${safeArea} - ${safeDate} (${safeTime})</p>
+                                    
+                                    <!-- ========================================== -->
+                                    <!-- NEW: SPLIT PICKUP AND DROPOFF UI -->
+                                    <!-- ========================================== -->
+                                    <div class="bg-black/20 p-3 rounded-xl border border-white/5 mb-4 text-xs">
                                         
-                                        <!-- THE NEW RIDER NOTES AND PAYMENT METHOD -->
-                                        <p class="text-amber-500 font-semibold border-t border-white/5 pt-2 mt-2">📝 Notes: ${sanitize(rawOrder.deliveryNotes || "None")}</p>
-                                        <p class="text-[10px] text-stone-400 uppercase tracking-wider">💳 ${sanitize(rawOrder.paymentMethod || "M-Pesa")}</p>
+                                        <!-- CHEF PICKUP -->
+                                        <div class="border-b border-white/10 pb-3 mb-3">
+                                            <p class="text-[10px] text-amber-500 font-bold uppercase tracking-wider mb-2">1. Pick Up From:</p>
+                                            <div class="space-y-1.5 pl-1">
+                                                <p class="text-stone-300">🧑‍🍳 ${chefName}</p>
+                                                <p class="text-orange-400">📞 <a href="tel:${chefPhone}" class="hover:underline">${chefPhone}</a></p>
+                                                <p class="text-stone-400">🏪 ${pickupLocation}</p>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- CUSTOMER DROPOFF -->
+                                        <div>
+                                            <p class="text-[10px] text-blue-400 font-bold uppercase tracking-wider mb-2">2. Deliver To:</p>
+                                            <div class="space-y-1.5 pl-1">
+                                                <p class="text-stone-300">👤 ${safeEmail}</p>
+                                                <p class="text-orange-400">📞 <a href="tel:${safePhone}" class="hover:underline">${safePhone}</a></p>
+                                                <p class="text-stone-400">📍 ${safeArea} - ${safeDate} (${safeTime})</p>
+                                                <p class="text-amber-500 font-semibold mt-1">📝 Notes: ${sanitize(rawOrder.deliveryNotes || "None")}</p>
+                                                <p class="text-[10px] text-stone-500 uppercase tracking-wider mt-1">💳 ${sanitize(rawOrder.paymentMethod || "M-Pesa")}</p>
+                                            </div>
+                                        </div>
+                                        
                                     </div>
+                                    <!-- ========================================== -->
+
                                     <h3 class="text-[10px] text-amber-500 font-bold uppercase tracking-wider mb-2">Order Items</h3>
                                     <ul class="space-y-1 mb-2 pl-1">${itemsList}</ul>
                                 </div>
