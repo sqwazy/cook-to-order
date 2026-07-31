@@ -1078,9 +1078,9 @@
                 snapshot.forEach((docSnap) => {
                     const data = docSnap.data();
                     const docId = docSnap.id;
-                    
+
                     // Fallback to docId if masterOrderId is missing (for older orders)
-                    const masterId = data.masterOrderId || docId; 
+                    const masterId = data.masterOrderId || docId;
 
                     if (!masterOrders[masterId]) {
                         masterOrders[masterId] = {
@@ -1097,14 +1097,14 @@
                     }
 
                     const group = masterOrders[masterId];
-                    
+
                     // 1. Track unique zones to calculate the delivery fee accurately
                     const zone = data.pickupZone || "Main Kitchen";
                     group.uniqueZones[zone] = true;
-                    
+
                     // 2. Sum up the raw food costs
                     group.totalFoodSubtotal += (data.foodSubtotal || 0);
-                    
+
                     // 3. Keep track of statuses to figure out overall progress
                     const rawStatus = data.status ? data.status.toLowerCase() : "pending";
                     group.allStatuses.push(rawStatus);
@@ -1114,7 +1114,7 @@
                         data.items.forEach(item => {
                             group.items.push({
                                 ...item,
-                                individualStatus: rawStatus 
+                                individualStatus: rawStatus
                             });
                         });
                     }
@@ -1138,10 +1138,10 @@
                     activeContainer.innerHTML = `<div class="text-xs text-stone-500 bg-white/5 p-3 rounded-xl border border-white/5">No active orders right now. Time to buy some bread!</div>`;
                     return;
                 }
-                
+
                 const masterOrdersList = processSnapshotToMasterOrders(snapshot);
                 activeContainer.innerHTML = '';
-                
+
                 masterOrdersList.forEach(masterOrder => {
                     activeContainer.innerHTML += buildMasterOrderCard(masterOrder);
                 });
@@ -1166,10 +1166,10 @@
                     pastContainer.innerHTML = `<div class="text-xs text-stone-600 italic">No past orders found.</div>`;
                     return;
                 }
-                
+
                 const masterOrdersList = processSnapshotToMasterOrders(snapshot);
                 pastContainer.innerHTML = '';
-                
+
                 masterOrdersList.forEach(masterOrder => {
                     pastContainer.innerHTML += buildMasterOrderCard(masterOrder);
                 });
@@ -1183,12 +1183,12 @@
         // HELPER: MASTER CARD GENERATOR (CLEANED UP UI)
         // =============================================================
         function buildMasterOrderCard(masterOrder) {
-            
+
             // 1. Calculate True Grand Total
             const numZones = Object.keys(masterOrder.uniqueZones).length;
             const totalDeliveryFee = masterOrder.baseDeliveryFee * numZones;
             const grandTotal = masterOrder.totalFoodSubtotal + totalDeliveryFee;
-            
+
             const displayTotal = `Ksh ${grandTotal.toLocaleString()}`;
 
             // 2. Format Date
@@ -1201,18 +1201,18 @@
 
             // 3. Build the Items List with DISTINCT tracking colors
             const itemsList = masterOrder.items.map(i => {
-                
+
                 // Set distinctly different colors for every phase
                 let iColor = "text-stone-400"; // PENDING (Neutral/Soft)
-                
+
                 if (i.individualStatus === "preparing") iColor = "text-blue-400"; // PREPARING (Blue)
                 if (i.individualStatus === "ready for delivery") iColor = "text-purple-400"; // READY (Purple)
                 if (i.individualStatus === "out for delivery") iColor = "text-orange-500"; // OUT FOR DELIVERY (Vibrant Orange)
                 if (i.individualStatus === "delivered") iColor = "text-green-400"; // DELIVERED (Green)
-                
+
                 // Capitalize status for display
                 const capStatus = i.individualStatus.charAt(0).toUpperCase() + i.individualStatus.slice(1);
-                
+
                 return `
                 <li class="flex justify-between items-center py-0.5">
                     <span>• ${i.qty}x ${i.title}</span>
@@ -1711,56 +1711,6 @@
             updateCartBadge(); renderCart();
         }
 
-        function updateCartTotal() {
-            let subtotal = 0;
-            const groupedCart = {}; // We need to count zones here too!
-
-            cart.forEach(item => {
-                subtotal += item.price * item.qty;
-                const zone = item.pickupZone || "Main Kitchen";
-                groupedCart[zone] = true; // Just marking that this zone exists in the cart
-            });
-
-            // 1. Get the Base Delivery Fee from the dropdown
-            const deliveryDropdown = document.getElementById('delivery-area');
-            let baseDeliveryFee = 0;
-
-            if (deliveryDropdown && deliveryDropdown.value !== "0") {
-                baseDeliveryFee = parseInt(deliveryDropdown.value);
-            }
-
-            // 2. Count the Unique Zones and Multiply!
-            let numZones = Object.keys(groupedCart).length;
-            let totalDeliveryFee = baseDeliveryFee * numZones;
-
-            // If the cart is completely empty, wipe out the delivery fee
-            if (subtotal === 0) {
-                totalDeliveryFee = 0;
-                numZones = 0;
-            }
-
-            // 3. Calculate Final Total
-            const total = subtotal + totalDeliveryFee;
-
-            // 4. Update the UI Prices
-            document.getElementById('cart-subtotal').innerText = `Ksh ${subtotal.toLocaleString()}`;
-
-            // Show the customer exactly what they are paying for!
-            if (numZones > 1 && totalDeliveryFee > 0) {
-                document.getElementById('cart-delivery-fee').innerText = `Ksh ${totalDeliveryFee.toLocaleString()} (${numZones} Zones)`;
-            } else {
-                document.getElementById('cart-delivery-fee').innerText = `Ksh ${totalDeliveryFee.toLocaleString()}`;
-            }
-
-            document.getElementById('cart-total-price').innerText = `Ksh ${total.toLocaleString()}`;
-
-            // Update the floating cart badge in the Nav bar
-            let totalItems = 0;
-            cart.forEach(item => totalItems += item.qty);
-            document.querySelectorAll('.cart-badge').forEach(badge => {
-                badge.innerText = totalItems;
-            });
-        }
 
         function renderCart() {
             const container = document.getElementById('cart-items-container');
@@ -2002,72 +1952,10 @@
                     closePaymentModal();
 
                     // ==========================================
-                    // FIREBASE DATABASE INJECTION (UPDATED MATH)
+                    // THE FIX: Route M-Pesa through the new multi-vendor splitter!
+                    // This one line replaces all the old database logic and cart clearing.
                     // ==========================================
-                    try {
-                        // 1. Calculate the core math directly from the cart
-                        const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-                        const deliveryFee = parseInt(document.getElementById('delivery-area').value) || 0;
-                        const customerTotal = subtotal + deliveryFee;
-
-                        // 2. THE BACKEND SPLIT (Vendor Commission)
-                        const platformFee = Math.ceil(subtotal * 0.10);
-                        const chefPayout = subtotal - platformFee;
-
-                        // Grab Location Area
-                        const deliveryTextSpan = document.getElementById('delivery-selected-text');
-                        let locationName = "Pickup";
-                        if (deliveryTextSpan && deliveryTextSpan.innerText !== "Select your area...") {
-                            locationName = deliveryTextSpan.innerText.split('(')[0].trim();
-                        }
-
-                        // Grab Date and Time
-                        const dateInput = document.getElementById('delivery-date');
-                        const timeInput = document.getElementById('delivery-time');
-                        const orderDate = (dateInput && dateInput.value) ? dateInput.value : "Today";
-                        const orderTime = (timeInput && timeInput.value) ? timeInput.value : "ASAP";
-
-                        // Grab Delivery Notes
-                        const notesInput = document.getElementById('delivery-notes');
-                        const notes = (notesInput && notesInput.value.trim() !== "") ? notesInput.value : "No specific instructions.";
-
-                        // Build the Order Ticket with the new financial data
-                        const orderTicket = {
-                            customerEmail: window.auth.currentUser ? window.auth.currentUser.email : "Guest",
-                            customerPhone: phoneInput,
-                            paymentMethod: "M-Pesa",
-                            deliveryNotes: notes,
-                            items: cart,
-
-                            // --- NEW FINANCIAL DATA STRUCTURE ---
-                            totalAmount: customerTotal, // What the customer pays
-                            foodSubtotal: subtotal,     // Raw cost of food
-                            deliveryFee: deliveryFee,   // Rider's cut
-                            platformFee: platformFee,   // Your 10% CTO cut
-                            chefPayout: chefPayout,     // What the chef receives
-                            // ------------------------------------
-
-                            status: "pending",
-                            deliveryArea: locationName,
-                            deliveryDate: orderDate,
-                            deliveryTime: orderTime,
-                            timestamp: window.serverTimestamp()
-                        };
-
-                        // Push to Firestore 'orders' collection
-                        await window.addDoc(window.collection(window.db, "orders"), orderTicket);
-                        console.log("Order successfully written to database!");
-
-                    } catch (error) {
-                        console.error("Database Sync Error:", error);
-                        alert("Payment cleared, but database failed to sync. Check console.");
-                    }
-                    // ==========================================
-
-                    // Empty the cart and reset UI
-                    cart = [];
-                    updateCartBadge();
-                    renderCart();
+                    await window.submitFinalOrder("M-Pesa");
 
                     // Reset the payment button back to default for the next customer
                     btn.disabled = false;
@@ -2075,7 +1963,6 @@
                     btn.classList.add('bg-green-500', 'hover:bg-green-400');
                     btn.classList.remove('bg-white');
                     document.getElementById('mpesa-number').value = '';
-                    if (document.getElementById('delivery-notes')) document.getElementById('delivery-notes').value = '';
 
                 }, 1200);
 
@@ -2398,34 +2285,6 @@
                 document.getElementById('orders-drawer-bg').classList.add('hidden');
             }, 300);
         }
-        // ==========================================
-        // DYNAMIC 5-DAY CALENDAR GENERATOR
-        // ==========================================
-        function populateDeliveryDates() {
-            const dateSelect = document.getElementById('delivery-date');
-            if (!dateSelect) return;
-
-            dateSelect.innerHTML = '';
-            const today = new Date();
-
-            for (let i = 0; i < 5; i++) {
-                let nextDate = new Date();
-                nextDate.setDate(today.getDate() + i);
-
-                // Formats to: "Mon, 31 Jul"
-                let dateString = nextDate.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
-
-                if (i === 0) dateString = "Today (" + dateString + ")";
-                else if (i === 1) dateString = "Tomorrow (" + dateString + ")";
-
-                dateSelect.innerHTML += `<option value="${dateString}">${dateString}</option>`;
-            }
-        }
-
-        // Run this when the page loads so the dates are ready
-        document.addEventListener('DOMContentLoaded', () => {
-            populateDeliveryDates();
-        });
 
         // ==========================================
         // SMART CHECKOUT ROUTER & COD FIX (Upgraded Security)
@@ -2615,12 +2474,12 @@
 
                 cart.forEach(item => {
                     // Group by Chef Email
-                    const chefEmail = item.ownerEmail || "unknown@chef.com"; 
+                    const chefEmail = item.ownerEmail || "unknown@chef.com";
                     if (!groupedCart[chefEmail]) {
                         groupedCart[chefEmail] = [];
                     }
                     groupedCart[chefEmail].push(item);
-                    
+
                     // Keep track of the unique zones for the customer's delivery fee math
                     const zone = item.pickupZone || "Main Kitchen";
                     uniqueZonesTracker[zone] = true;
@@ -2631,7 +2490,7 @@
 
                 // 2. Calculate the base delivery fee
                 const baseDeliveryFee = parseInt(document.getElementById('delivery-area').value) || 0;
-                
+
                 // Grab Shared Order Details (Location, Date, Time, Phone, Notes)
                 const deliveryTextSpan = document.getElementById('delivery-selected-text');
                 let locationName = "Pickup";
@@ -2652,37 +2511,37 @@
                 // 3. LOOP THROUGH EACH CHEF AND CREATE 100% INDEPENDENT ORDERS
                 for (const chefEmail of uniqueChefs) {
                     const chefItems = groupedCart[chefEmail];
-                    
+
                     // Grab the zone and name specifically for this chef's food
                     const chefZone = chefItems[0].pickupZone || "Main Kitchen";
                     const chefName = chefItems[0].chef.toUpperCase().replace(/\s+/g, '');
-                    
+
                     // --- CHEF-SPECIFIC FINANCIAL MATH ---
                     const chefSubtotal = chefItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
-                    const chefPlatformFee = Math.ceil(chefSubtotal * 0.10); 
-                    const chefPayout = chefSubtotal - chefPlatformFee;    
-                    const chefTotalAmount = chefSubtotal + baseDeliveryFee; 
-                    
+                    const chefPlatformFee = Math.ceil(chefSubtotal * 0.10);
+                    const chefPayout = chefSubtotal - chefPlatformFee;
+                    const chefTotalAmount = chefSubtotal;
+
                     const subOrderId = `${masterOrderId}-${chefName}`;
 
                     // Build the Sub-Order Ticket
                     const orderTicket = {
                         masterOrderId: masterOrderId,
                         subOrderId: subOrderId,
-                        pickupZone: chefZone, 
+                        pickupZone: chefZone,
                         ownerEmail: chefEmail, // The strict identifier that separates them!
                         customerEmail: window.auth && window.auth.currentUser ? window.auth.currentUser.email : "Guest",
                         customerPhone: phoneInput,
                         paymentMethod: paymentType,
                         deliveryNotes: notes,
-                        items: chefItems, 
+                        items: chefItems,
 
                         // --- SPLIT FINANCIAL DATA ---
-                        totalAmount: chefTotalAmount, 
-                        foodSubtotal: chefSubtotal,  
-                        deliveryFee: baseDeliveryFee, 
-                        platformFee: chefPlatformFee, 
-                        chefPayout: chefPayout,   
+                        totalAmount: chefTotalAmount,
+                        foodSubtotal: chefSubtotal,
+                        deliveryFee: baseDeliveryFee,
+                        platformFee: chefPlatformFee,
+                        chefPayout: chefPayout,
                         // ----------------------------
 
                         status: "pending",
