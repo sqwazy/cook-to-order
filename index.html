@@ -1150,15 +1150,16 @@
                 activeContainer.innerHTML = `<div class="text-xs text-red-400">Failed to sync live tracking.</div>`;
             });
 
-            // ---------------------------------------------------------
+           // ---------------------------------------------------------
             // QUERY 2: PAST ORDERS HISTORY 
             // ---------------------------------------------------------
             const historyQuery = query(
                 collection(db, "orders"),
                 where("customerEmail", "==", userEmail),
-                where("status", "==", "Delivered"),
+                // Use "in" to fetch both Delivered and Cancelled orders
+                where("status", "in", ["Delivered", "cancelled", "Cancelled"]),
                 orderBy("timestamp", "desc"),
-                limit(10) // Increased limit slightly since we are grouping them now
+                limit(20) // Grab 20 raw tickets to ensure we can build 5 full Master Orders
             );
 
             window.unsubscribePastOrders = onSnapshot(historyQuery, (snapshot) => {
@@ -1167,10 +1168,15 @@
                     return;
                 }
 
+                // 1. Group the raw tickets into Master Orders
                 const masterOrdersList = processSnapshotToMasterOrders(snapshot);
                 pastContainer.innerHTML = '';
 
-                masterOrdersList.forEach(masterOrder => {
+                // 2. strictly limit the array to only 5 master orders
+                const limitedMasterOrders = masterOrdersList.slice(0, 5);
+
+                // 3. Render only those 5 orders to the UI
+                limitedMasterOrders.forEach(masterOrder => {
                     pastContainer.innerHTML += buildMasterOrderCard(masterOrder);
                 });
             }, (error) => {
@@ -1210,12 +1216,15 @@
                 if (i.individualStatus === "out for delivery") iColor = "text-orange-500"; // OUT FOR DELIVERY (Vibrant Orange)
                 if (i.individualStatus === "delivered") iColor = "text-green-400"; // DELIVERED (Green)
 
+                // NEW: Cancelled Status (Red, semi-transparent, and crossed out)
+                if (i.individualStatus === "cancelled") iColor = "text-red-500 line-through opacity-70";
+
                 // Capitalize status for display
                 const capStatus = i.individualStatus.charAt(0).toUpperCase() + i.individualStatus.slice(1);
 
                 return `
                 <li class="flex justify-between items-center py-0.5">
-                    <span>• ${i.qty}x ${i.title}</span>
+                    <span class="${i.individualStatus === 'cancelled' ? 'line-through opacity-70' : ''}">• ${i.qty}x ${i.title}</span>
                     <span class="text-[9px] uppercase tracking-wider font-bold ${iColor}">[${capStatus}]</span>
                 </li>`;
             }).join('');

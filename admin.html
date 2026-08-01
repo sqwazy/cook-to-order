@@ -433,36 +433,44 @@
                                     <ul class="space-y-1 mb-2 pl-1">${itemsList}</ul>
                                 </div>
                                 ACTION_BUTTON
+                                ADMIN_CANCEL_BUTTON <!-- NEW PLACEHOLDER -->
                             </div>`;
+
+                        // --- THE ADMIN ESCAPE HATCH ---
+                        let adminCancelBtn = "";
+                        if (window.currentUserRole === "admin" && currentStatus !== "Cancelled" && currentStatus !== "Delivered") {
+                            adminCancelBtn = `<button onclick="updateOrderStatus('${rawOrder.id}', 'Cancelled')" class="w-full mt-2 bg-red-950/50 hover:bg-red-900 text-red-400 border border-red-900/50 py-2.5 rounded-xl text-sm font-bold transition-colors shadow-lg">🚨 Force Cancel (Admin)</button>`;
+                        }
 
                         // Sort into KITCHEN or RIDER based on status
                         if (currentStatus.toLowerCase() === "pending") {
                             kitchenCount++;
                             kitchenGrid.innerHTML += baseCard
                                 .replace('STATUS_COLOR', 'bg-amber-500')
-                                .replace('ACTION_BUTTON', `<button onclick="updateOrderStatus('${rawOrder.id}', 'Preparing')" class="w-full mt-4 bg-amber-600 hover:bg-amber-500 text-white py-2.5 rounded-xl text-sm font-bold">Accept & Prepare</button>`);
+                                .replace('ACTION_BUTTON', `<button onclick="updateOrderStatus('${rawOrder.id}', 'Preparing')" class="w-full mt-4 bg-amber-600 hover:bg-amber-500 text-white py-2.5 rounded-xl text-sm font-bold">Accept & Prepare</button>`)
+                                .replace('ADMIN_CANCEL_BUTTON', adminCancelBtn);
                         }
                         else if (currentStatus === "Preparing") {
                             kitchenCount++;
                             kitchenGrid.innerHTML += baseCard
                                 .replace('STATUS_COLOR', 'bg-blue-500')
-                                .replace('ACTION_BUTTON', `<button onclick="updateOrderStatus('${rawOrder.id}', 'Ready for Delivery')" class="w-full mt-4 bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-xl text-sm font-bold">Food is Ready</button>`);
+                                .replace('ACTION_BUTTON', `<button onclick="updateOrderStatus('${rawOrder.id}', 'Ready for Delivery')" class="w-full mt-4 bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-xl text-sm font-bold">Food is Ready</button>`)
+                                .replace('ADMIN_CANCEL_BUTTON', adminCancelBtn);
                         }
                         else if (currentStatus === "Ready for Delivery") {
-                            // Shows in BOTH! Kitchen knows it's waiting, Rider knows to pick it up.
                             kitchenCount++;
                             riderCount++;
 
-                            const waitingCard = baseCard.replace('STATUS_COLOR', 'bg-purple-500');
+                            const waitingCard = baseCard.replace('STATUS_COLOR', 'bg-purple-500').replace('ADMIN_CANCEL_BUTTON', adminCancelBtn);
                             kitchenGrid.innerHTML += waitingCard.replace('ACTION_BUTTON', `<div class="w-full mt-4 bg-black/20 text-stone-400 py-2.5 rounded-xl text-sm font-bold text-center border border-white/5">Waiting for Rider</div>`);
                             riderGrid.innerHTML += waitingCard.replace('ACTION_BUTTON', `<button onclick="updateOrderStatus('${rawOrder.id}', 'Out for Delivery')" class="w-full mt-4 bg-purple-600 hover:bg-purple-500 text-white py-2.5 rounded-xl text-sm font-bold">Start Delivery Run</button>`);
                         }
                         else if (currentStatus === "Out for Delivery") {
-                            // Only Rider needs to see it now
                             riderCount++;
                             riderGrid.innerHTML += baseCard
                                 .replace('STATUS_COLOR', 'bg-orange-500')
-                                .replace('ACTION_BUTTON', `<button onclick="updateOrderStatus('${rawOrder.id}', 'Delivered')" class="w-full mt-4 bg-orange-600 hover:bg-orange-500 text-white py-2.5 rounded-xl text-sm font-bold">Mark as Delivered</button>`);
+                                .replace('ACTION_BUTTON', `<button onclick="updateOrderStatus('${rawOrder.id}', 'Delivered')" class="w-full mt-4 bg-orange-600 hover:bg-orange-500 text-white py-2.5 rounded-xl text-sm font-bold">Mark as Delivered</button>`)
+                                .replace('ADMIN_CANCEL_BUTTON', adminCancelBtn);
                         }
                     });
 
