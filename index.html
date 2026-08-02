@@ -123,17 +123,26 @@
             </div>
 
             <div class="flex space-x-4 lg:space-x-5 items-center text-stone-300">
-                <!-- NEW SEARCH BAR -->
-                <div class="relative items-center hidden lg:flex">
+                <!-- DESKTOP SEARCH BAR (UPDATED WITH 'X' BUTTON) -->
+                <div class="relative flex items-center hidden lg:flex">
                     <!-- The Search Icon -->
                     <svg class="w-4 h-4 text-stone-400 absolute left-3 pointer-events-none" fill="none"
                         stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                     </svg>
-                    <!-- The Input Field -->
-                    <input type="text" id="search-input" onkeyup="handleSearch()" placeholder="Search menu..."
-                        class="bg-[#3d2a1d]/60 border border-white/10 text-white text-sm font-medium rounded-full pl-9 pr-4 py-1.5 focus:outline-none focus:border-amber-500 transition w-36 md:w-48 placeholder-stone-500">
+                    <!-- The Input Field (Notice pr-10) -->
+                    <input type="text" id="search-input-desktop" onkeyup="handleSearch('search-input-desktop')"
+                        placeholder="Search menu..."
+                        class="bg-[#3d2a1d]/60 border border-white/10 text-white text-sm font-medium rounded-full pl-9 pr-10 py-1.5 focus:outline-none focus:border-amber-500 transition w-36 md:w-48 placeholder-stone-500">
+                    <!-- NEW: The Desktop Clear Button -->
+                    <button id="clear-btn-desktop" onclick="clearSearch('search-input-desktop')"
+                        class="absolute right-3 text-stone-400 hover:text-amber-500 hidden transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
                 </div>
                 <div onclick="openMyOrders()" class="hidden md:flex items-center gap-2 cursor-pointer group">
                     <div class="p-2 rounded-full bg-white/5 group-hover:bg-amber-500/20 transition-colors">
@@ -443,9 +452,10 @@
                     <h4 class="text-white font-bold tracking-wide mb-2">Explore</h4>
                     <a href="javascript:void(0)" onclick="scrollToMenu()"
                         class="text-stone-400 hover:text-amber-500 transition text-sm w-fit">Full Menu</a>
-                    <a href="#" class="text-stone-400 hover:text-amber-500 transition text-sm w-fit">My Orders</a>
-                    <a href="#" class="text-stone-400 hover:text-amber-500 transition text-sm w-fit">Chef
-                        Application</a>
+                    
+                    <!-- UPDATED CHEF APPLICATION LINK -->
+                    <a href="https://docs.google.com/forms/d/e/1FAIpQLSeFfwI_hM2jli4eKGbk8bqTssRET6SZyc81tNTOeq-_eJOprg/viewform?usp=header" target="_blank" rel="noopener noreferrer" 
+                        class="text-stone-400 hover:text-amber-500 transition text-sm w-fit">Chef Application</a>
                 </div>
 
                 <div class="flex flex-col gap-3">
@@ -752,6 +762,28 @@
         </div>
 
         <div class="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
+
+            <!-- MOBILE SEARCH BAR -->
+            <div class="relative flex items-center w-full">
+                <svg class="w-5 h-5 text-stone-400 absolute left-4 pointer-events-none" fill="none"
+                    stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+                <!-- Notice pr-12 to make room for the X -->
+                <input type="text" id="search-input-mobile" onkeyup="handleSearch('search-input-mobile')"
+                    placeholder="Search menu..."
+                    class="bg-[#3d2a1d]/60 border border-white/10 text-white text-base font-medium rounded-full pl-12 pr-12 py-3 focus:outline-none focus:border-amber-500 transition w-full placeholder-stone-500">
+                <!-- NEW: The Mobile Clear Button -->
+                <button id="clear-btn-mobile" onclick="clearSearch('search-input-mobile')"
+                    class="absolute right-4 text-stone-400 hover:text-amber-500 hidden transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+
             <a href="#" onclick="closeNav()"
                 class="text-lg font-semibold text-white hover:text-amber-500 transition flex items-center gap-4">
                 <svg class="w-6 h-6 text-stone-500" fill="none" stroke="currentColor" stroke-width="2"
@@ -2310,7 +2342,7 @@
                     }
                 });
         };
-       // ==========================================
+        // ==========================================
         // NEW: MENU FILTERING, SORTING, SEARCH & RENDERING
         // ==========================================
         let currentFilter = 'All';
@@ -2319,18 +2351,19 @@
         function scrollToMenu() {
             document.getElementById('menu-section').scrollIntoView({ behavior: 'smooth' });
         }
-        
+
         function scrollToTop() {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // <-- NEW: Function to handle when a user types in the search bar
-        function handleSearch() {
-            // Get what the user typed and make it lowercase
-            searchQuery = document.getElementById('search-input').value.toLowerCase().trim();
-            
-            // Auto-switch to "All" categories when searching so they search the whole menu
+        function handleSearch(activeInputId) {
+            searchQuery = document.getElementById(activeInputId).value.toLowerCase().trim();
+
+            const clearBtnId = activeInputId === 'search-input-desktop' ? 'clear-btn-desktop' : 'clear-btn-mobile';
+            const clearBtn = document.getElementById(clearBtnId);
+
             if (searchQuery !== '') {
+                clearBtn.classList.remove('hidden');
                 currentFilter = 'All';
                 document.querySelectorAll('.filter-btn').forEach(btn => {
                     if (btn.id === 'filter-All') {
@@ -2339,9 +2372,25 @@
                         btn.className = "filter-btn shrink-0 px-5 py-2 rounded-full bg-white/5 hover:bg-white/10 text-stone-300 text-sm font-semibold transition border border-white/5";
                     }
                 });
+            } else {
+                clearBtn.classList.add('hidden');
             }
-            
+
             applySortAndFilter();
+
+            // NEW: Only scroll down if the user actually typed something
+            if (searchQuery !== '') {
+                scrollToGrid();
+            }
+        }
+
+        // <-- NEW: Function to clear the search bar and reset the grid
+        function clearSearch(activeInputId) {
+            // Empty the text input
+            document.getElementById(activeInputId).value = '';
+
+            // Re-run the search function with the empty value to reset everything
+            handleSearch(activeInputId);
         }
 
         function setFilter(category) {
@@ -2354,11 +2403,12 @@
             document.getElementById('filter-' + category).className = "filter-btn active-filter shrink-0 px-5 py-2 rounded-full bg-amber-600 text-white text-sm font-bold shadow-lg shadow-amber-900/40 transition";
 
             applySortAndFilter();
+            
         }
 
         function applySortAndFilter() {
             const sortMethod = document.getElementById('sort-dropdown').value;
-            const chefMethod = document.getElementById('chef-filter').value; 
+            const chefMethod = document.getElementById('chef-filter').value;
 
             // Use allMenuDishes so the grid shows the full database
             let displayDishes = [...allMenuDishes];
@@ -2367,12 +2417,12 @@
             displayDishes = displayDishes.filter(dish => {
                 const matchesCategory = (currentFilter === 'All') || (dish.category === currentFilter);
                 const matchesChef = (chefMethod === 'All') || (dish.chef === chefMethod);
-                
+
                 // <-- NEW: Check if the dish title or chef name contains the typed letters
                 const fullDishName = (dish.topTitle + " " + dish.bottomTitle).toLowerCase();
-                const matchesSearch = (searchQuery === '') || 
-                                      fullDishName.includes(searchQuery) || 
-                                      dish.chef.toLowerCase().includes(searchQuery);
+                const matchesSearch = (searchQuery === '') ||
+                    fullDishName.includes(searchQuery) ||
+                    dish.chef.toLowerCase().includes(searchQuery);
 
                 return matchesCategory && matchesChef && matchesSearch; // Must pass all 3 tests!
             });
@@ -2388,10 +2438,14 @@
 
             renderMenuGrid(displayDishes);
 
-            // Anchor the screen to prevent mobile jumping
+        }
+        // ==========================================
+        // NEW: Helper function to scroll to the grid
+        // ==========================================
+        function scrollToGrid() {
             setTimeout(() => {
                 const grid = document.getElementById('dynamic-menu-grid');
-                if (grid) { // Safety check
+                if (grid) {
                     const yOffset = -180;
                     const y = grid.getBoundingClientRect().top + window.pageYOffset + yOffset;
                     window.scrollTo({ top: y, behavior: 'smooth' });
