@@ -959,6 +959,28 @@
 
         </div>
     </div>
+    <!-- ========================================== -->
+    <!-- CUSTOM THEMED MODAL (ALERTS & CONFIRMS) -->
+    <!-- ========================================== -->
+    <div id="custom-modal-overlay"
+        class="fixed inset-0 bg-black/80 z-[999] hidden flex items-center justify-center backdrop-blur-sm transition-opacity duration-300 opacity-0">
+        <div
+            class="bg-[#2c1e16] border border-amber-900/30 p-6 rounded-2xl shadow-2xl max-w-sm w-full mx-4 transform scale-95 transition-transform duration-300 flex flex-col items-center text-center">
+
+            <div id="custom-modal-icon" class="text-amber-500 mb-3 text-4xl">
+                <!-- Icon will be injected here -->
+            </div>
+
+            <h3 id="custom-modal-title" class="text-xl font-bold text-white mb-2 tracking-wide">Title</h3>
+            <p id="custom-modal-message" class="text-sm text-stone-300 mb-6 leading-relaxed">Message goes here</p>
+
+            <!-- Buttons Container -->
+            <div id="custom-modal-actions" class="flex w-full gap-3">
+                <!-- Buttons dynamically injected via JS -->
+            </div>
+
+        </div>
+    </div>
     <script type="module">
         // FIREBASE INITIALIZATION & AUTHENTICATION
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
@@ -1150,7 +1172,7 @@
                 activeContainer.innerHTML = `<div class="text-xs text-red-400">Failed to sync live tracking.</div>`;
             });
 
-           // ---------------------------------------------------------
+            // ---------------------------------------------------------
             // QUERY 2: PAST ORDERS HISTORY 
             // ---------------------------------------------------------
             const historyQuery = query(
@@ -1303,83 +1325,120 @@
         });
 
         // ==========================================
-        // SECURE LOG OUT LOGIC
+        // SECURE LOG OUT LOGIC (WITH CUSTOM MODAL)
         // ==========================================
         window.handleLogOut = function () {
-            // 1. Kill BOTH listeners BEFORE logging out
-            if (typeof window.unsubscribeActiveOrders === 'function') {
-                window.unsubscribeActiveOrders();
-                window.unsubscribeActiveOrders = null;
-            }
-            if (typeof window.unsubscribePastOrders === 'function') {
-                window.unsubscribePastOrders();
-                window.unsubscribePastOrders = null;
-            }
-            console.log("🛑 All database listeners stopped securely.");
+            // 1. Show the custom confirm dialog first
+            window.showModal(
+                'Log Out',
+                'Are you sure you want to log out of your account?',
+                'confirm',
+                () => {
+                    // --- EVERYTHING BELOW HAPPENS ONLY IF THEY CLICK "YES" ---
 
-            // 2. Visually clear the dashboard UI 
-            const activeContainer = document.getElementById('active-orders-container');
-            const pastContainer = document.getElementById('past-orders-container');
-            if (activeContainer) activeContainer.innerHTML = '';
-            if (pastContainer) pastContainer.innerHTML = '';
+                    // 2. Kill BOTH listeners BEFORE logging out
+                    if (typeof window.unsubscribeActiveOrders === 'function') {
+                        window.unsubscribeActiveOrders();
+                        window.unsubscribeActiveOrders = null;
+                    }
+                    if (typeof window.unsubscribePastOrders === 'function') {
+                        window.unsubscribePastOrders();
+                        window.unsubscribePastOrders = null;
+                    }
+                    console.log("🛑 All database listeners stopped securely.");
 
-            // 3. Tell Firebase to log the user out
-            signOut(auth).then(() => {
-                console.log("🔥 Successfully logged out!");
-                alert("You have been securely logged out.");
-            }).catch((error) => {
-                console.error("Logout Error:", error);
-            });
+                    // 3. Visually clear the dashboard UI 
+                    const activeContainer = document.getElementById('active-orders-container');
+                    const pastContainer = document.getElementById('past-orders-container');
+                    if (activeContainer) activeContainer.innerHTML = '';
+                    if (pastContainer) pastContainer.innerHTML = '';
+
+                    // 4. Tell Firebase to log the user out
+                    signOut(auth).then(() => {
+                        console.log("🔥 Successfully logged out!");
+
+                        // 5. Show the beautiful success alert instead of the native browser popup
+                        window.showModal('Logged Out', 'You have been securely logged out.', 'alert');
+
+                    }).catch((error) => {
+                        console.error("Logout Error:", error);
+                    });
+                }
+            );
         };
-
         // ==========================================
         // EXISTING SIGN UP / LOG IN LOGIC (UPGRADED)
         // ==========================================
-        // We added 'async' here so we can wait for Firebase to update the profile
         window.handleAuthSubmit = async function (event) {
             event.preventDefault();
 
             const email = document.getElementById('auth-email').value;
             const password = document.getElementById('auth-password').value;
-
-            // NEW: Try to find a name input field
             const nameInput = document.getElementById('auth-name');
             const fullName = nameInput ? nameInput.value : "";
-
             const submitBtn = document.getElementById('auth-submit-btn');
             const isSignUpMode = submitBtn.innerText.trim().toLowerCase() === 'create account';
 
             if (!email || !password) {
-                alert("Please fill in all required fields.");
+                // NEW: Custom Modal for missing fields
+                window.showModal("Missing Details", "Please fill in all required fields.", "error");
                 return;
             }
 
             if (isSignUpMode) {
                 // --- SIGN UP LOGIC ---
                 try {
-                    // 1. Create the account
                     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                     const user = userCredential.user;
 
-                    // 2. Attach their name to the profile (if they typed one)
                     if (fullName) {
                         await updateProfile(user, { displayName: fullName });
                     }
 
-                    alert("Account created successfully! Welcome aboard.");
+                    // NEW: Friendly custom modal for brand new users
+                    window.showModal("Welcome!", "Account created successfully! Welcome aboard.", "alert");
                     if (typeof closeAuth === 'function') closeAuth();
 
                 } catch (error) {
-                    alert("Sign Up Error: " + error.message);
+                    console.error("Sign Up Error:", error);
+
+                    // 1. Translate the ugly Firebase error codes into clean English
+                    let errorMessage = "An error occurred during sign up. Please try again.";
+
+                    if (error.code === 'auth/email-already-in-use') {
+                        errorMessage = "An account with this email address already exists. Try logging in instead.";
+                    } else if (error.code === 'auth/weak-password') {
+                        errorMessage = "Your password is too weak. It must be at least 6 characters long.";
+                    } else if (error.code === 'auth/invalid-email') {
+                        errorMessage = "Please enter a valid email address.";
+                    } else if (error.code === 'auth/missing-password') {
+                        errorMessage = "Please enter a password to create your account.";
+                    } else {
+                        // Fallback: Strip the "Firebase: " and "(auth/...)" jargon out of the raw message
+                        errorMessage = error.message.replace(/Firebase:\s/g, '').replace(/\s\(auth\/.*\)\./g, '');
+                    }
+
+                    // 2. Pass "error" instead of "alert" so the modal shows the Red 'X'
+                    window.showModal("Sign Up Failed", errorMessage, "error");
                 }
             } else {
                 // --- LOG IN LOGIC ---
                 try {
                     await signInWithEmailAndPassword(auth, email, password);
-                    alert("Welcome back!");
+
+                    // SUCCESS: No popup at all! Just silently close the modal and let them order.
                     if (typeof closeAuth === 'function') closeAuth();
+
                 } catch (error) {
-                    alert("Log In Error: " + error.message);
+                    console.error("Login Error:", error);
+
+                    // NEW: User-friendly error translator using the custom modal
+                    let errorMessage = "Something went wrong. Please try again.";
+                    if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+                        errorMessage = "The email or password you entered is incorrect.";
+                    }
+
+                    window.showModal("Login Failed", errorMessage, "error");
                 }
             }
         };
@@ -1937,7 +1996,7 @@
 
             // Basic validation to ensure they typed something resembling a phone number
             if (phoneInput.length < 10) {
-                alert("Please enter a valid 10-digit M-Pesa number.");
+                window.showModal("Invalid M-Pesa Number", "Please enter a valid 10-digit M-Pesa number.", "error");
                 return;
             }
 
@@ -2020,16 +2079,11 @@
         // ==========================================
         function openAuth(mode) {
             switchAuthMode(mode);
-
-            // Close mobile nav if it's open
             const navBg = document.getElementById('nav-drawer-bg');
             if (!navBg.classList.contains('hidden')) {
                 closeNav();
             }
-
-            // NEW: Lock the background for the Auth Modal
             lockScroll();
-
             const modal = document.getElementById('auth-modal');
             const content = document.getElementById('auth-modal-content');
 
@@ -2041,9 +2095,7 @@
         }
 
         function closeAuth() {
-            // NEW: Unlock the background when Auth Modal closes
             unlockScroll();
-
             const modal = document.getElementById('auth-modal');
             const content = document.getElementById('auth-modal-content');
 
@@ -2070,39 +2122,38 @@
                 submitBtn.innerText = "Create Account";
             }
         }
+
         // ==========================================
         // PASSWORD RESET LOGIC
         // ==========================================
         window.handleForgotPassword = function () {
-            // Grab the email from the login form
             const emailInput = document.getElementById('auth-email');
             const emailAddress = emailInput ? emailInput.value.trim() : '';
 
-            // Validate that they actually typed something
             if (!emailAddress) {
-                alert("Please enter your email address first, then click 'Forgot?'.");
+                // NEW: Custom Modal
+                window.showModal("Missing Email", "Please enter your email address first, then click 'Forgot?'.", "alert");
                 if (emailInput) emailInput.focus();
                 return;
             }
 
-            // THE FIX: Using the newly exported modular function
             window.sendPasswordResetEmail(window.auth, emailAddress)
                 .then(() => {
-                    alert(`A password reset link has been sent to ${emailAddress}. Please check your inbox (and spam folder).`);
+                    // NEW: Custom Modal
+                    window.showModal("Email Sent", `A password reset link has been sent to ${emailAddress}. Please check your inbox (and spam folder).`, "alert");
                 })
                 .catch((error) => {
                     console.error("Password reset error:", error);
-
+                    // NEW: Custom Modals for specific errors
                     if (error.code === 'auth/user-not-found') {
-                        alert("We couldn't find an account with that email address.");
+                        window.showModal("Account Not Found", "We couldn't find an account with that email address.", "alert");
                     } else if (error.code === 'auth/invalid-email') {
-                        alert("Please enter a valid email address format.");
+                        window.showModal("Invalid Email", "Please enter a valid email address format.", "alert");
                     } else {
-                        alert("An error occurred. Please try again later.");
+                        window.showModal("Error", "An error occurred. Please try again later.", "alert");
                     }
                 });
         };
-
         // ==========================================
         // NEW: MENU FILTERING, SORTING & RENDERING
         // ==========================================
@@ -2267,11 +2318,14 @@
         // --- UI CONTROLS FOR MY ORDERS ---
         function openMyOrders() {
             const currentUser = window.auth ? window.auth.currentUser : null;
+
             if (!currentUser) {
-                alert("You must be logged in to view your orders.");
+                // Instantly open the login drawer
                 openAuth('login');
-                return;
+                return; // Stop the function so the sidebar doesn't open
             }
+
+            // ... (the rest of your openMyOrders logic stays exactly the same)
 
             // --- Lock the background scroll ---
             document.body.classList.add('overflow-hidden');
@@ -2310,12 +2364,10 @@
 
             // 2. ENFORCE USER LOGIN
             if (!window.auth || !window.auth.currentUser) {
-                alert("Please log in or create an account to complete your order.");
-
                 // Automatically slide the cart closed
                 closeCart();
 
-                // Pop open your awesome Auth Modal right to the login tab!
+                // Instantly pop open the Auth Modal right to the login tab!
                 openAuth('login');
 
                 return; // Stop the checkout process here
@@ -2324,7 +2376,7 @@
             // 3. Validate Delivery Area
             const areaSpan = document.getElementById('delivery-selected-text');
             if (!areaSpan || areaSpan.innerText === "Select your area...") {
-                alert("Please select a delivery area before proceeding.");
+                window.showModal("Missing Area", "Please select a delivery area before proceeding.", "error");
                 return;
             }
 
@@ -2333,7 +2385,7 @@
             const phoneRegex = /^(07|01)\d{8}$/;
 
             if (!phoneInput || !phoneRegex.test(phoneInput.value.trim())) {
-                alert("Please enter a valid 10-digit phone number starting with 07 or 01 (e.g., 0712345678).");
+                window.showModal("Invalid Phone Number", "Please enter a valid 10-digit phone number starting with 07 or 01 (e.g., 0712345678).", "error");
                 if (phoneInput) phoneInput.focus(); // Highlights the box for the user
                 return;
             }
@@ -2537,17 +2589,25 @@
                     const subOrderId = `${masterOrderId}-${chefName}`;
 
                     // Build the Sub-Order Ticket
+                    // --- ADD THIS LINE TO GRAB THE NAME ---
+                    const customerName = (window.auth && window.auth.currentUser && window.auth.currentUser.displayName) ? window.auth.currentUser.displayName : "Guest";
+
                     const orderTicket = {
                         masterOrderId: masterOrderId,
                         subOrderId: subOrderId,
                         pickupZone: chefZone,
-                        ownerEmail: chefEmail, // The strict identifier that separates them!
+                        ownerEmail: chefEmail,
 
                         // --- THE NEW CHEF PHONE TAG ---
                         chefPhone: chefItems[0].chefPhone || "No Phone",
                         // ------------------------------
 
                         customerEmail: window.auth && window.auth.currentUser ? window.auth.currentUser.email : "Guest",
+
+                        // --- ADD THIS LINE ---
+                        customerName: customerName,
+                        // ---------------------
+
                         customerPhone: phoneInput,
                         paymentMethod: paymentType,
                         deliveryNotes: notes,
@@ -2567,14 +2627,13 @@
                         deliveryTime: orderTime,
                         timestamp: window.serverTimestamp()
                     };
-
                     // Push each ticket to Firestore independently!
                     await window.addDoc(window.collection(window.db, "orders"), orderTicket);
                 }
 
                 // 4. Final Success Feedback
                 const totalCustomerCost = cart.reduce((sum, item) => sum + (item.price * item.qty), 0) + (baseDeliveryFee * numZones);
-                alert(`Order successfully placed! Total cost including ${numZones} pickup zone(s) delivery: Ksh ${totalCustomerCost.toLocaleString()}`);
+                window.showModal("Success!", "Order successfully placed!", "alert");
 
                 // Close drawer and reset UI exactly as you had it
                 closeCart();
@@ -2589,6 +2648,71 @@
                 alert("Failed to sync order to database. Check console.");
             }
         }
+        // ==========================================
+        // CUSTOM MODAL CONTROLLER (UPGRADED)
+        // ==========================================
+        window.showModal = function (title, message, type = 'alert', onConfirm = null) {
+            const overlay = document.getElementById('custom-modal-overlay');
+            const innerModal = overlay.querySelector('div');
+            const titleEl = document.getElementById('custom-modal-title');
+            const messageEl = document.getElementById('custom-modal-message');
+            const actionsEl = document.getElementById('custom-modal-actions');
+            const iconEl = document.getElementById('custom-modal-icon');
+
+            // 1. Set Text
+            titleEl.innerText = title;
+            messageEl.innerText = message;
+
+            // Reset title color in case it was changed by a previous error
+            titleEl.className = "text-xl font-bold text-white mb-2 tracking-wide";
+
+            // 2. Configure Buttons and Icons based on Type
+            if (type === 'confirm') {
+                iconEl.innerHTML = '⚠️';
+                actionsEl.innerHTML = `
+            <button onclick="closeModal()" class="flex-1 py-2.5 rounded-xl text-sm font-bold bg-black/20 text-stone-400 border border-white/10 hover:bg-black/40 hover:text-white transition">Cancel</button>
+            <button id="modal-confirm-btn" class="flex-1 py-2.5 rounded-xl text-sm font-bold bg-amber-600 text-white hover:bg-amber-500 transition shadow-lg shadow-amber-900/40">Yes, Log Out</button>
+        `;
+                document.getElementById('modal-confirm-btn').onclick = () => {
+                    closeModal();
+                    if (onConfirm) onConfirm();
+                };
+            } else if (type === 'error') {
+                // --- NEW ERROR STATE ---
+                iconEl.innerHTML = '❌';
+                titleEl.className = "text-xl font-bold text-red-400 mb-2 tracking-wide"; // Make title red
+                actionsEl.innerHTML = `
+            <button onclick="closeModal()" class="w-full py-2.5 rounded-xl text-sm font-bold bg-red-950/80 text-red-400 border border-red-900/50 hover:bg-red-900 hover:text-white transition shadow-lg">Try Again</button>
+        `;
+            } else {
+                // --- STANDARD SUCCESS ALERT ---
+                iconEl.innerHTML = '✅';
+                actionsEl.innerHTML = `
+            <button onclick="closeModal()" class="w-full py-2.5 rounded-xl text-sm font-bold bg-amber-600 text-white hover:bg-amber-500 transition shadow-lg shadow-amber-900/40">Got it</button>
+        `;
+            }
+
+            // 3. Animate In
+            overlay.classList.remove('hidden');
+            setTimeout(() => {
+                overlay.classList.remove('opacity-0');
+                innerModal.classList.remove('scale-95');
+                innerModal.classList.add('scale-100');
+            }, 10);
+        };
+
+        window.closeModal = function () {
+            const overlay = document.getElementById('custom-modal-overlay');
+            const innerModal = overlay.querySelector('div');
+
+            overlay.classList.add('opacity-0');
+            innerModal.classList.remove('scale-100');
+            innerModal.classList.add('scale-95');
+
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+            }, 300);
+        };
     </script>
 </body>
 
