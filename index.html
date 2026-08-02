@@ -123,11 +123,18 @@
             </div>
 
             <div class="flex space-x-4 lg:space-x-5 items-center text-stone-300">
-                <button class="hidden lg:block w-5 h-5 hover:text-amber-500 transition"><svg fill="none"
-                        stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round"
+                <!-- NEW SEARCH BAR -->
+                <div class="relative items-center hidden lg:flex">
+                    <!-- The Search Icon -->
+                    <svg class="w-4 h-4 text-stone-400 absolute left-3 pointer-events-none" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                    </svg></button>
+                    </svg>
+                    <!-- The Input Field -->
+                    <input type="text" id="search-input" onkeyup="handleSearch()" placeholder="Search menu..."
+                        class="bg-[#3d2a1d]/60 border border-white/10 text-white text-sm font-medium rounded-full pl-9 pr-4 py-1.5 focus:outline-none focus:border-amber-500 transition w-36 md:w-48 placeholder-stone-500">
+                </div>
                 <div onclick="openMyOrders()" class="hidden md:flex items-center gap-2 cursor-pointer group">
                     <div class="p-2 rounded-full bg-white/5 group-hover:bg-amber-500/20 transition-colors">
                         <svg class="w-4 h-4 text-stone-400 group-hover:text-amber-500 transition-colors" fill="none"
@@ -261,7 +268,7 @@
                             </div>
 
                             <span id="likes-count"
-                                class="text-[9px] lg:text-[10px] font-bold text-stone-400 mt-1 transition-colors duration-300 group-hover:text-stone-300">342
+                                class="text-[9px] lg:text-[10px] font-bold text-stone-400 mt-1 transition-colors duration-300 group-hover:text-stone-300">0
                                 LIKES</span>
                         </button>
                     </div>
@@ -359,19 +366,45 @@
                             Treats</button>
                     </div>
 
-                    <div class="relative shrink-0 w-full sm:w-auto">
-                        <select id="sort-dropdown" onchange="applySortAndFilter()"
-                            class="w-full sm:w-auto appearance-none bg-[#3d2a1d]/80 border border-white/10 text-white text-sm font-semibold py-2 pl-4 pr-10 rounded-xl focus:outline-none focus:border-amber-500 cursor-pointer transition">
-                            <option value="likes">Sort by: Most Liked</option>
-                            <option value="price-low">Price: Low to High</option>
-                            <option value="price-high">Price: High to Low</option>
-                        </select>
-                        <div
-                            class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-amber-500">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
-                            </svg>
+                    <!-- RIGHT CONTROLS: CHEF & SORT DROPDOWNS -->
+                    <div class="flex gap-3 w-full sm:w-auto mt-4 sm:mt-0">
+
+                        <!-- NEW: CHEF FILTER -->
+                        <div class="relative shrink-0 w-[50%] sm:w-auto">
+                            <select id="chef-filter" onchange="applySortAndFilter()"
+                                class="w-full sm:w-auto appearance-none bg-[#3d2a1d]/80 border border-white/10 text-white text-sm font-semibold py-2 pl-4 pr-10 rounded-xl focus:outline-none focus:border-amber-500 cursor-pointer transition">
+                                <option value="All">All Chefs</option>
+                                <option value="Chef Ali">Chef Ali</option>
+                                <option value="Chef Amina">Chef Amina</option>
+                                <option value="Mama Fatma">Mama Fatma</option>
+                                <option value="Chef Swalah">Chef Swalah</option>
+                            </select>
+                            <div
+                                class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-amber-500">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
                         </div>
+
+                        <!-- EXISTING: SORT DROPDOWN -->
+                        <div class="relative shrink-0 w-[50%] sm:w-auto">
+                            <select id="sort-dropdown" onchange="applySortAndFilter()"
+                                class="w-full sm:w-auto appearance-none bg-[#3d2a1d]/80 border border-white/10 text-white text-sm font-semibold py-2 pl-4 pr-10 rounded-xl focus:outline-none focus:border-amber-500 cursor-pointer transition">
+                                <option value="likes">Sort by: Most Liked</option>
+                                <option value="price-low">Price: Low to High</option>
+                                <option value="price-high">Price: High to Low</option>
+                            </select>
+                            <div
+                                class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-amber-500">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -993,7 +1026,7 @@
             updateProfile,
             GoogleAuthProvider,
             signInWithPopup,
-            sendPasswordResetEmail // <--- ADD THIS HERE!
+            sendPasswordResetEmail
         } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
 
         // Import the Firestore Database tools PLUS the Search tools!
@@ -1002,12 +1035,17 @@
             collection,
             addDoc,
             serverTimestamp,
-            query,     // Lets us search
-            where,     // Lets us filter by email
-            getDocs,   // Lets us download the results
-            orderBy,   // Lets us sort by newest first
-            limit,     // Protects our database by capping history
-            onSnapshot // Listens to active deliveries in real-time
+            query,
+            where,
+            getDocs,
+            orderBy,
+            limit,
+            onSnapshot,
+            // --- NEW LIKES IMPORTS ---
+            doc,
+            updateDoc,
+            arrayUnion,
+            arrayRemove
         } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -1033,9 +1071,15 @@
         window.getDocs = getDocs;
         window.orderBy = orderBy;
         window.auth = auth;
-        window.sendPasswordResetEmail = sendPasswordResetEmail; // <--- ADD THIS HERE!
+        window.sendPasswordResetEmail = sendPasswordResetEmail;
         window.GoogleAuthProvider = GoogleAuthProvider;
         window.signInWithPopup = signInWithPopup;
+
+        // --- NEW LIKES WINDOW ASSIGNMENTS ---
+        window.doc = doc;
+        window.updateDoc = updateDoc;
+        window.arrayUnion = arrayUnion;
+        window.arrayRemove = arrayRemove;
 
         // ==========================================
         // GOOGLE SIGN-IN LOGIC
@@ -1322,6 +1366,10 @@
                     mobileLoggedOut.classList.add('flex');
                 }
             }
+
+            // ---> NEW: FETCH THE MENU EVERY TIME THE AUTH STATE RESOLVES <---
+            window.fetchMenuFromDatabase();
+
         });
 
         // ==========================================
@@ -1515,46 +1563,57 @@
             }, 5000);
         }
 
-        // Database
-        const topDishes = [
-            {
-                tag: "#1 Most loved dish", topTitle: "SWAHILI", bottomTitle: "BIRIANI", chef: "Chef Ali", likes: 342, isLiked: false, category: "Swahili Classics",
-                teaser: "Aromatic basmati rice slow-cooked with tender marinated beef, rich coastal spices, and thick yogurt gravy.",
-                image: "https://images.unsplash.com/photo-1631515243349-e0cb75fb8d3a?q=80&w=600&auto=format&fit=crop",
-                bio: "Chef Ali learned the art of perfect Biriani from his grandmother. He specializes in slow-cooked, deeply spiced traditional Swahili meals made entirely from scratch.",
-                phone: "+254700000001", rawPrice: 850,
-                ownerEmail: "ali@test.com", // <--- Added
-                pickupZone: "Mombasa CBD"
-            },
-            {
-                tag: "#2 Most loved dish", topTitle: "CRISPY", bottomTitle: "VIAZI KARAI", chef: "Chef Amina", likes: 289, isLiked: false, category: "Street Food",
-                teaser: "Golden, crispy fried potatoes coated in a vibrant turmeric and tamarind batter. The ultimate street delicacy.",
-                image: "https://images.unsplash.com/photo-1541529086526-db283c563270?q=80&w=600&auto=format&fit=crop",
-                bio: "Famous for her secret tamarind dip, Chef Amina has been perfecting Mombasa street food for over a decade. Her Viazi Karai is always fried fresh to order.",
-                phone: "+254700000002", rawPrice: 250,
-                ownerEmail: "amina@test.com", // <--- Added
-                pickupZone: "Nyali"
-            },
-            {
-                tag: "#3 Most loved dish", topTitle: "COASTAL", bottomTitle: "MABUYU", chef: "Mama Fatma", likes: 215, isLiked: false, category: "Sweet Treats",
-                teaser: "Sweet, tangy baobab seeds coated in a rich, spiced red syrup. A nostalgic Mombasa classic.",
-                image: "https://images.unsplash.com/photo-1515003197210-e0cd71810b5f?q=80&w=600&auto=format&fit=crop",
-                bio: "Mama Fatma’s Mabuyu is legendary. She sources the freshest baobab seeds and coats them in a perfectly balanced sweet and spicy syrup that keeps locals coming back.",
-                phone: "+254700000003", rawPrice: 150,
-                ownerEmail: "fatma@test.com",
-                pickupZone: "Majengo"
-            },
-            {
-                tag: "#4 Most loved dish", topTitle: "ARTISANAL", bottomTitle: "SPICED CAKE", chef: "Chef Swalah", likes: 142, isLiked: false, category: "Sweet Treats",
-                teaser: "Slow-baked with coastal cardamom, fermented for that perfect balance. Finished with a light honey glaze.",
-                image: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?q=80&w=600&auto=format&fit=crop",
-                bio: "Chef Swalah brings a modern twist to traditional coastal baking. He infuses high-quality ingredients with local spices like cardamom and cinnamon for unforgettable pastries.",
-                phone: "+254700000004", rawPrice: 1500,
-                ownerEmail: "swalah@test.com", // <--- Added
-                pickupZone: "Tudor"
-            }
-        ];
+        // --- DYNAMIC DATABASE VARIABLES ---
+        // We use 'let' instead of 'const' so Firebase can update them!
+        let topDishes = [];
+        let allMenuDishes = [];
 
+        // --- FETCH FROM FIREBASE ---
+        window.fetchMenuFromDatabase = async function () {
+            try {
+                // 1. Get all menu items from the "menu" collection
+                const querySnapshot = await window.getDocs(window.collection(window.db, "menu"));
+                allMenuDishes = [];
+
+                querySnapshot.forEach((doc) => {
+                    allMenuDishes.push({ id: doc.id, ...doc.data() });
+                });
+
+                // 2. THE TIE-BREAKER SHUFFLE: Randomize the whole array first!
+                allMenuDishes.sort(() => Math.random() - 0.5);
+
+                // 3. THE LIKES SORT: Now sort by the length of the likedBy array
+                allMenuDishes.sort((a, b) => {
+                    const likesA = a.likedBy ? a.likedBy.length : 0;
+                    const likesB = b.likedBy ? b.likedBy.length : 0;
+                    return likesB - likesA; // Highest likes move to the top
+                });
+
+                // 4. Slice the top 4 for the Hero section
+                topDishes = allMenuDishes.slice(0, 4);
+
+                // 5. Check if the currently logged-in user has liked these items
+                const currentUser = window.auth ? window.auth.currentUser : null;
+                const currentUserId = currentUser ? currentUser.uid : null;
+
+                topDishes.forEach(dish => {
+                    // Count the array length. If it doesn't exist yet, it's 0.
+                    dish.likes = dish.likedBy ? dish.likedBy.length : 0;
+
+                    // Check if the user's ID is inside the array
+                    dish.isLiked = currentUserId ? (dish.likedBy || []).includes(currentUserId) : false;
+                });
+
+                // 6. Update the Hero UI with the #1 dish!
+                swapDish(0, false);
+
+                // 7. NEW: Tell the bottom grid to draw all the dishes!
+                setFilter('All');
+
+            } catch (error) {
+                console.error("Error fetching menu:", error);
+            }
+        };
         function nextDish() { let nextIndex = (currentIndex + 1) % topDishes.length; swapDish(nextIndex, true); }
         function prevDish() { let prevIndex = (currentIndex - 1 + topDishes.length) % topDishes.length; swapDish(prevIndex, true); }
 
@@ -1570,7 +1629,18 @@
             rightCard.style.transform = "translateY(20px)"; rightCard.style.opacity = "0";
 
             for (let i = 0; i < 4; i++) {
-                const thumb = document.getElementById('thumb-' + i); const img = thumb.querySelector('img'); const text = thumb.querySelector('span');
+                const thumb = document.getElementById('thumb-' + i);
+                if (!thumb) continue; // Safety check
+                const img = thumb.querySelector('img');
+                const text = thumb.querySelector('span');
+
+                // --- NEW: Sync the thumbnails with the randomly shuffled database! ---
+                if (topDishes[i]) {
+                    img.src = topDishes[i].image;
+                    text.innerText = topDishes[i].bottomTitle;
+                }
+                // -------------------------------------------------------------------
+
                 if (i === index) {
                     thumb.className = "w-24 flex flex-col items-center cursor-pointer transition duration-300 transform scale-110 -translate-y-2";
                     img.className = "w-16 h-16 rounded-full object-cover mb-2 shadow-[0_0_20px_rgba(245,158,11,0.6)]";
@@ -1586,7 +1656,7 @@
                 void mainImg.offsetWidth; mainImg.style.transition = "all 0.7s cubic-bezier(0.25, 1, 0.5, 1)"; mainImg.style.transform = "translateX(0) scale(1) rotate(0deg)"; mainImg.style.opacity = "1";
             }, 400);
             setTimeout(() => {
-                document.getElementById('tagline').innerText = dish.tag;
+                document.getElementById('tagline').innerText = `#${index + 1} MOST LOVED DISH`;
                 document.getElementById('title-top').innerText = dish.topTitle;
                 document.getElementById('title-bottom').innerText = dish.bottomTitle;
                 document.getElementById('chef-name').innerText = dish.chef;
@@ -1604,18 +1674,103 @@
             }, 800);
         }
 
-        // Global Likes
-        function toggleHeroLike() { const dish = topDishes[currentIndex]; dish.isLiked = !dish.isLiked; dish.likes += dish.isLiked ? 1 : -1; updateHeroLikeBtn(); updateGridLikeBtn(currentIndex); }
-        function toggleGridLike(index, event) { event.stopPropagation(); const dish = topDishes[index]; dish.isLiked = !dish.isLiked; dish.likes += dish.isLiked ? 1 : -1; updateGridLikeBtn(index); if (index === currentIndex) updateHeroLikeBtn(); }
-        function updateHeroLikeBtn() {
-            const dish = topDishes[currentIndex]; const count = document.getElementById('likes-count'); const icon = document.getElementById('hero-like-icon');
-            count.innerText = dish.likes + " LIKES";
-            if (dish.isLiked) { icon.classList.add('text-red-500'); icon.classList.remove('text-stone-400'); } else { icon.classList.remove('text-red-500'); icon.classList.add('text-stone-400'); }
+        // ==========================================
+        // SMART LIKES SYSTEM (Firebase Integrated)
+        // ==========================================
+
+        async function handleLikeToggle(dishIndex) {
+            const currentUser = window.auth ? window.auth.currentUser : null;
+
+            // 1. Block guests from liking
+            if (!currentUser) {
+                window.showModal("Login Required", "Please log in or sign up to like your favorite dishes!", "error");
+                return;
+            }
+
+            const dish = topDishes[dishIndex];
+
+            // Safety check: Ensure the dish has a database ID before trying to update it
+            if (!dish.id) {
+                console.error("No dish ID found. Is this data from Firebase?");
+                return;
+            }
+
+            const dishRef = window.doc(window.db, "menu", dish.id);
+            const userId = currentUser.uid;
+
+            try {
+                if (dish.isLiked) {
+                    // UNLIKE: Remove their ID from the database array
+                    await window.updateDoc(dishRef, {
+                        likedBy: window.arrayRemove(userId)
+                    });
+                    dish.isLiked = false;
+                    dish.likes -= 1;
+                } else {
+                    // LIKE: Add their ID to the database array
+                    await window.updateDoc(dishRef, {
+                        likedBy: window.arrayUnion(userId)
+                    });
+                    dish.isLiked = true;
+                    dish.likes += 1;
+                }
+
+                // Update the UI to reflect the change immediately
+                if (dishIndex === currentIndex) updateHeroLikeBtn();
+                updateGridLikeBtn(dishIndex);
+
+            } catch (error) {
+                console.error("Error toggling like:", error);
+                window.showModal("Error", "Failed to update like. Please try again.", "error");
+            }
         }
+
+        // The click handlers that trigger the smart function
+        window.toggleHeroLike = function () {
+            handleLikeToggle(currentIndex);
+        };
+
+        window.toggleGridLike = function (index, event) {
+            event.stopPropagation();
+            handleLikeToggle(index);
+        };
+
+        // ==========================================
+        // UI UPDATERS (Kept exactly as you had them!)
+        // ==========================================
+
+        function updateHeroLikeBtn() {
+            const dish = topDishes[currentIndex];
+            const count = document.getElementById('likes-count');
+            const icon = document.getElementById('hero-like-icon');
+            if (!count || !icon || !dish) return;
+
+            count.innerText = dish.likes + " LIKES";
+
+            if (dish.isLiked) {
+                icon.classList.add('text-red-500');
+                icon.classList.remove('text-stone-400');
+            } else {
+                icon.classList.remove('text-red-500');
+                icon.classList.add('text-stone-400');
+            }
+        }
+
         function updateGridLikeBtn(index) {
-            const dish = topDishes[index]; const count = document.getElementById('grid-like-count-' + index); const icon = document.getElementById('grid-like-icon-' + index);
-            if (!count || !icon) return; count.innerText = dish.likes + " LIKES";
-            if (dish.isLiked) { icon.classList.add('text-red-500'); icon.classList.remove('text-white'); } else { icon.classList.remove('text-red-500'); icon.classList.add('text-white'); }
+            const dish = topDishes[index];
+            const count = document.getElementById('grid-like-count-' + index);
+            const icon = document.getElementById('grid-like-icon-' + index);
+            if (!count || !icon || !dish) return;
+
+            count.innerText = dish.likes + " LIKES";
+
+            if (dish.isLiked) {
+                icon.classList.add('text-red-500');
+                icon.classList.remove('text-white');
+            } else {
+                icon.classList.remove('text-red-500');
+                icon.classList.add('text-white');
+            }
         }
 
         // Seller Modal
@@ -1654,7 +1809,9 @@
         function openOrderModal(index) {
             currentOrderIndex = index;
             currentQty = 1;
-            const dish = topDishes[index];
+
+            // --- NEW: Pull from the FULL database, not just the Top 4! ---
+            const dish = allMenuDishes[index];
 
             document.getElementById('order-title').innerText = dish.topTitle + (dish.bottomTitle ? " " + dish.bottomTitle : "");
             document.getElementById('order-teaser').innerText = dish.teaser;
@@ -1672,7 +1829,7 @@
 
             document.getElementById('order-modal').classList.remove('hidden');
 
-            // --- ADDED: Freeze the background scroll ---
+            // Freeze the background scroll
             document.body.classList.add('overflow-hidden');
 
             setTimeout(() => {
@@ -1680,7 +1837,6 @@
                 document.getElementById('order-modal-content').classList.add('scale-100', 'opacity-100');
             }, 10);
         }
-
         function closeOrderModal() {
             document.getElementById('order-modal-content').classList.remove('scale-100', 'opacity-100');
             document.getElementById('order-modal-content').classList.add('scale-95', 'opacity-0');
@@ -2154,17 +2310,38 @@
                     }
                 });
         };
-        // ==========================================
-        // NEW: MENU FILTERING, SORTING & RENDERING
+       // ==========================================
+        // NEW: MENU FILTERING, SORTING, SEARCH & RENDERING
         // ==========================================
         let currentFilter = 'All';
+        let searchQuery = ''; // <-- NEW: Keeps track of what the user types
 
         function scrollToMenu() {
             document.getElementById('menu-section').scrollIntoView({ behavior: 'smooth' });
         }
-        // NEW: Scroll back to the top of the page
+        
         function scrollToTop() {
             window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // <-- NEW: Function to handle when a user types in the search bar
+        function handleSearch() {
+            // Get what the user typed and make it lowercase
+            searchQuery = document.getElementById('search-input').value.toLowerCase().trim();
+            
+            // Auto-switch to "All" categories when searching so they search the whole menu
+            if (searchQuery !== '') {
+                currentFilter = 'All';
+                document.querySelectorAll('.filter-btn').forEach(btn => {
+                    if (btn.id === 'filter-All') {
+                        btn.className = "filter-btn active-filter shrink-0 px-5 py-2 rounded-full bg-amber-600 text-white text-sm font-bold shadow-lg shadow-amber-900/40 transition";
+                    } else {
+                        btn.className = "filter-btn shrink-0 px-5 py-2 rounded-full bg-white/5 hover:bg-white/10 text-stone-300 text-sm font-semibold transition border border-white/5";
+                    }
+                });
+            }
+            
+            applySortAndFilter();
         }
 
         function setFilter(category) {
@@ -2181,16 +2358,28 @@
 
         function applySortAndFilter() {
             const sortMethod = document.getElementById('sort-dropdown').value;
-            let displayDishes = [...topDishes];
+            const chefMethod = document.getElementById('chef-filter').value; 
 
-            // 1. Apply Filter
-            if (currentFilter !== 'All') {
-                displayDishes = displayDishes.filter(dish => dish.category === currentFilter);
-            }
+            // Use allMenuDishes so the grid shows the full database
+            let displayDishes = [...allMenuDishes];
+
+            // 1. Apply Filters (Category, Chef, AND Search combined)
+            displayDishes = displayDishes.filter(dish => {
+                const matchesCategory = (currentFilter === 'All') || (dish.category === currentFilter);
+                const matchesChef = (chefMethod === 'All') || (dish.chef === chefMethod);
+                
+                // <-- NEW: Check if the dish title or chef name contains the typed letters
+                const fullDishName = (dish.topTitle + " " + dish.bottomTitle).toLowerCase();
+                const matchesSearch = (searchQuery === '') || 
+                                      fullDishName.includes(searchQuery) || 
+                                      dish.chef.toLowerCase().includes(searchQuery);
+
+                return matchesCategory && matchesChef && matchesSearch; // Must pass all 3 tests!
+            });
 
             // 2. Apply Sort
             if (sortMethod === 'likes') {
-                displayDishes.sort((a, b) => b.likes - a.likes);
+                displayDishes.sort((a, b) => (b.likes || 0) - (a.likes || 0));
             } else if (sortMethod === 'price-low') {
                 displayDishes.sort((a, b) => a.rawPrice - b.rawPrice);
             } else if (sortMethod === 'price-high') {
@@ -2199,10 +2388,10 @@
 
             renderMenuGrid(displayDishes);
 
-            // NEW: Anchor the screen to prevent mobile jumping
+            // Anchor the screen to prevent mobile jumping
             setTimeout(() => {
                 const grid = document.getElementById('dynamic-menu-grid');
-                if (grid) { // Safety check to make sure the grid exists
+                if (grid) { // Safety check
                     const yOffset = -180;
                     const y = grid.getBoundingClientRect().top + window.pageYOffset + yOffset;
                     window.scrollTo({ top: y, behavior: 'smooth' });
@@ -2215,12 +2404,14 @@
             grid.innerHTML = '';
 
             if (dishesToRender.length === 0) {
-                grid.innerHTML = `<p class="text-stone-400 col-span-full text-center py-12">No dishes found in this category.</p>`;
+                // Updated message to be more inclusive of the chef filter
+                grid.innerHTML = `<p class="text-stone-400 col-span-full text-center py-12">No dishes found matching your current filters.</p>`;
                 return;
             }
 
             dishesToRender.forEach(dish => {
-                const originalIndex = topDishes.indexOf(dish);
+                // Find the dish's index in the global array so the Modal and Like buttons target the right item
+                const originalIndex = allMenuDishes.indexOf(dish);
                 const heartClass = dish.isLiked ? "text-red-500" : "text-white";
 
                 grid.innerHTML += `
@@ -2235,7 +2426,7 @@
                             
                             <svg id="grid-like-icon-${originalIndex}" class="w-3.5 h-3.5 ${heartClass} md:group-hover/btn:scale-110 md:group-hover/btn:text-red-500 transition-all duration-300 mr-1.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"></path></svg>
                             
-                            <span id="grid-like-count-${originalIndex}" class="text-[10px] font-bold text-white tracking-wide">${dish.likes} LIKES</span>
+                            <span id="grid-like-count-${originalIndex}" class="text-[10px] font-bold text-white tracking-wide">${dish.likes || 0} LIKES</span>
                         </button>
                     </div>
                     <div class="mb-4 flex-1">
