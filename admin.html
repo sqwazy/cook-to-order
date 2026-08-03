@@ -427,7 +427,8 @@
                         // --- DYNAMICALLY BUILD THE TOTAL SECTION BASED ON ROLE ---
                         let roleBasedTotalHTML = "";
 
-                        if (window.currentUserRole === "admin") {
+                        // 1. Admin & Rider View (Both need the full breakdown for cash collection)
+                        if (window.currentUserRole === "admin" || window.currentUserRole === "rider") {
                             roleBasedTotalHTML = `
                                 <div class="text-xs text-stone-300 space-y-0.5 mt-2">
                                     <p>Food: <span class="font-bold">Ksh ${(rawOrder.foodSubtotal || 0).toLocaleString()}</span></p>
@@ -437,12 +438,13 @@
                                     </p>
                                 </div>
                             `;
-                        } else if (window.currentUserRole === "chef") {
+                        } 
+                        // 2. Chef View (Only sees their specific food payout)
+                        else if (window.currentUserRole === "chef") {
                             roleBasedTotalHTML = `<span class="text-sm text-stone-300">Chef Payout: <strong class="text-white">Ksh ${displayTotal.toLocaleString()}</strong></span>`;
-                        } else {
-                            // Rider View
-                            roleBasedTotalHTML = `<span class="text-sm text-stone-300">Food Total: <strong class="text-white">Ksh ${(rawOrder.foodSubtotal || 0).toLocaleString()}</strong></span>`;
                         }
+
+                        // Build the generic card HTML
 
                         // Build the generic card HTML
                         let baseCard = `
