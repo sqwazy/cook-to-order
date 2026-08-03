@@ -2734,7 +2734,7 @@
                         pickupZone: chefZone,
                         ownerEmail: chefEmail,
                         chefPhone: chefItems[0].chefPhone || "No Phone",
-                        customerEmail: window.auth && window.auth.currentUser ? window.auth.currentUser.email : "Guest",
+                        customerEmail: window.auth.currentUser.email.toLowerCase(),
                         customerName: customerName,
                         customerPhone: phoneInput,
                         paymentMethod: paymentType,
