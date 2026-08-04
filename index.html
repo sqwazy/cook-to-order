@@ -364,7 +364,7 @@
                 <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
                     <!-- PICKUP ZONE FILTER -->
                     <div class="relative shrink-0 flex-1 sm:flex-initial">
-                        <select id="zone-filter" onchange="applySortAndFilter()"
+                        <select id="zone-filter" onchange="applySortAndFilter(true)"
                             class="w-full sm:w-auto appearance-none bg-[#3d2a1d]/80 border border-white/10 text-white text-sm font-semibold py-2 pl-4 pr-10 rounded-xl focus:outline-none focus:border-amber-500 cursor-pointer transition">
                             <option value="All">All Locations</option>
                             <option value="Nyali">Nyali</option>
@@ -383,7 +383,7 @@
 
                     <!-- CHEF FILTER -->
                     <div class="relative shrink-0 flex-1 sm:flex-initial">
-                        <select id="chef-filter" onchange="applySortAndFilter()"
+                        <select id="chef-filter" onchange="applySortAndFilter(true)"
                             class="w-full sm:w-auto appearance-none bg-[#3d2a1d]/80 border border-white/10 text-white text-sm font-semibold py-2 pl-4 pr-10 rounded-xl focus:outline-none focus:border-amber-500 cursor-pointer transition">
                             <option value="All">All Chefs</option>
                             <option value="Chef Ali">Chef Ali</option>
@@ -402,7 +402,7 @@
 
                     <!-- SORT DROPDOWN -->
                     <div class="relative shrink-0 flex-1 sm:flex-initial">
-                        <select id="sort-dropdown" onchange="applySortAndFilter()"
+                        <select id="sort-dropdown" onchange="applySortAndFilter(true)"
                             class="w-full sm:w-auto appearance-none bg-[#3d2a1d]/80 border border-white/10 text-white text-sm font-semibold py-2 pl-4 pr-10 rounded-xl focus:outline-none focus:border-amber-500 cursor-pointer transition">
                             <option value="likes">Sort by: Most Liked</option>
                             <option value="price-low">Price: Low to High</option>
@@ -685,12 +685,9 @@
                         <li onclick="selectDelivery('Tudor', 'Tudor')"
                             class="px-4 py-3.5 text-sm text-stone-300 hover:bg-amber-600 hover:text-white cursor-pointer transition-colors border-b border-white/5">
                             Tudor</li>
-                        <li onclick="selectDelivery('Bamburi', 'Bamburi')"
-                            class="px-4 py-3.5 text-sm text-stone-300 hover:bg-amber-600 hover:text-white cursor-pointer transition-colors border-b border-white/5">
-                            Bamburi</li>
-                        <li onclick="selectDelivery('Mtwapa', 'Mtwapa')"
+                        <li onclick="selectDelivery('Majengo', 'Majengo')"
                             class="px-4 py-3.5 text-sm text-stone-300 hover:bg-amber-600 hover:text-white cursor-pointer transition-colors">
-                            Mtwapa</li>
+                            Majengo</li>
                     </ul>
 
                     <input type="hidden" id="delivery-area" value="0">
@@ -2137,21 +2134,32 @@
                 "Mombasa CBD": 200,
                 "Tudor": 250,
                 "Bamburi": 150,
-                "Mtwapa": 300
+                "Mtwapa": 300,
+                "Majengo": 200
             },
             "Mombasa CBD": {
                 "Mombasa CBD": 75,
                 "Nyali": 200,
                 "Tudor": 100,
                 "Bamburi": 300,
-                "Mtwapa": 400
+                "Mtwapa": 400,
+                "Majengo": 200
             },
             "Tudor": {
                 "Tudor": 75,
                 "Mombasa CBD": 100,
                 "Nyali": 250,
                 "Bamburi": 350,
-                "Mtwapa": 450
+                "Mtwapa": 450,
+                "Majengo": 200
+            },
+            "Majengo": {
+                "Majengo": 75,
+                "Nyali": 200,
+                "Mombasa CBD": 200,
+                "Tudor": 200,
+                "Bamburi": 200,
+                "Mtwapa": 200
             },
             // Default fallback if a Chef's zone isn't in this list
             "Default": 200
@@ -2523,7 +2531,7 @@
             }
         }
 
-        function applySortAndFilter() {
+        function applySortAndFilter(keepMenuInView = false) {
             const sortMethod = document.getElementById('sort-dropdown').value;
             const chefMethod = document.getElementById('chef-filter').value;
             const zoneMethod = document.getElementById('zone-filter').value; // Grab the new zone filter value
@@ -2556,6 +2564,20 @@
             }
 
             renderMenuGrid(displayDishes);
+
+            // On a short mobile result list, the browser can clamp the current
+            // scroll position upward and reveal the hero. Re-anchor the menu.
+            if (keepMenuInView && window.innerWidth < 1024) {
+                requestAnimationFrame(() => {
+                    const menuSection = document.getElementById('menu-section');
+                    if (!menuSection) return;
+                    const navHeight = document.querySelector('nav')?.offsetHeight || 0;
+                    window.scrollTo({
+                        top: Math.max(0, menuSection.offsetTop - navHeight - 12),
+                        behavior: 'smooth'
+                    });
+                });
+            }
         }
         // ==========================================
         // NEW: Helper function to scroll to the grid
