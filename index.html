@@ -124,7 +124,7 @@
 
             <div class="flex space-x-4 lg:space-x-5 items-center text-stone-300">
                 <!-- DESKTOP SEARCH BAR (UPDATED WITH 'X' BUTTON) -->
-                <div class="relative flex items-center hidden lg:flex">
+                <div class="relative hidden md:flex items-center">
                     <!-- The Search Icon -->
                     <svg class="w-4 h-4 text-stone-400 absolute left-3 pointer-events-none" fill="none"
                         stroke="currentColor" viewBox="0 0 24 24">
@@ -778,7 +778,7 @@
         <div class="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
 
             <!-- MOBILE SEARCH BAR -->
-            <div class="relative flex items-center w-full">
+            <div class="relative flex md:hidden items-center w-full">
                 <svg class="w-5 h-5 text-stone-400 absolute left-4 pointer-events-none" fill="none"
                     stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -798,7 +798,7 @@
                 </button>
             </div>
             <!-- NEW: Live search result count -->
-            <span id="search-result-count" class="text-xs text-amber-500/80 font-medium pl-4 -mt-2"></span>
+            <span id="search-result-count" class="md:hidden text-xs text-amber-500/80 font-medium pl-4 -mt-2"></span>
 
             <a href="#" onclick="closeNav()"
                 class="text-lg font-semibold text-white hover:text-amber-500 transition flex items-center gap-4">
@@ -2565,15 +2565,15 @@
 
             renderMenuGrid(displayDishes);
 
-            // On a short mobile result list, the browser can clamp the current
-            // scroll position upward and reveal the hero. Re-anchor the menu.
-            if (keepMenuInView && window.innerWidth < 1024) {
+            // A short result list can clamp the current scroll position upward
+            // and reveal the hero. Re-anchor every viewport at the menu.
+            if (keepMenuInView) {
                 requestAnimationFrame(() => {
                     const menuSection = document.getElementById('menu-section');
                     if (!menuSection) return;
                     const navHeight = document.querySelector('nav')?.offsetHeight || 0;
                     window.scrollTo({
-                        top: Math.max(0, menuSection.offsetTop - navHeight - 12),
+                        top: Math.max(0, menuSection.offsetTop - navHeight),
                         behavior: 'smooth'
                     });
                 });
