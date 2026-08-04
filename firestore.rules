@@ -1,0 +1,86 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email != null;
+    }
+
+    function myEmail() {
+      return request.auth.token.email.lower();
+    }
+
+    function staffRecord() {
+      return get(/databases/$(database)/documents/users/$(myEmail())).data;
+    }
+
+    function isStaff() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(myEmail())) &&
+        staffRecord().role in ['chef', 'rider', 'admin'];
+    }
+
+    function isAdmin() {
+      return isStaff() && staffRecord().role == 'admin';
+    }
+
+    function isChef() {
+      return isStaff() && staffRecord().role == 'chef';
+    }
+
+    function isRider() {
+      return isStaff() && staffRecord().role == 'rider';
+    }
+
+    function onlyStatusChanges() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+    }
+
+    function isAllowedStatus() {
+      return request.resource.data.status in [
+        'pending', 'Preparing', 'Ready for Delivery', 'Out for Delivery', 'Delivered', 'cancelled'
+      ];
+    }
+
+    function chefTransition() {
+      return resource.data.ownerEmail == myEmail() && (
+        (resource.data.status == 'pending' && request.resource.data.status == 'Preparing') ||
+        (resource.data.status == 'Preparing' && request.resource.data.status == 'Ready for Delivery')
+      );
+    }
+
+    function riderTransition() {
+      return resource.data.pickupZone == staffRecord().zone && (
+        (resource.data.status == 'Ready for Delivery' && request.resource.data.status == 'Out for Delivery') ||
+        (resource.data.status == 'Out for Delivery' && request.resource.data.status == 'Delivered')
+      );
+    }
+
+    match /users/{userEmail} {
+      allow get: if isSignedIn() && myEmail() == userEmail;
+      allow list, create, update, delete: if false;
+    }
+
+    match /orders/{orderId} {
+      // Orders are created only by the trusted Cloud Function using the Admin SDK.
+      allow create, delete: if false;
+
+      allow get, list: if isSignedIn() && (
+        resource.data.customerEmail == myEmail() ||
+        isAdmin() ||
+        (isChef() && resource.data.ownerEmail == myEmail()) ||
+        (isRider() && resource.data.pickupZone == staffRecord().zone)
+      );
+
+      allow update: if onlyStatusChanges() && isAllowedStatus() && (
+        isAdmin() ||
+        (isChef() && chefTransition()) ||
+        (isRider() && riderTransition())
+      );
+    }
+
+    match /menu/{dishId} {
+      allow read: if true;
+      // Menu editing and likes are handled by trusted server-side code.
+      allow create, update, delete: if false;
+    }
+  }
+}

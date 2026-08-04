@@ -143,7 +143,7 @@
         // Import Firebase tools
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
-        import { getFirestore, collection, query, orderBy, onSnapshot, updateDoc, doc, getDoc, getDocs, limit } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+        import { getFirestore, collection, query, where, orderBy, onSnapshot, updateDoc, doc, getDoc, getDocs, limit } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCrwuiHQVAAGpeyKswJ19TXzPyAwfaW8fU",
@@ -163,6 +163,7 @@
         window.db = db;
         window.collection = collection;
         window.query = query;
+        window.where = where;
         window.orderBy = orderBy;
         window.getDocs = getDocs; // <--- This will now work perfectly!
         window.doc = doc;
@@ -182,6 +183,36 @@
             temp.textContent = str;
             return temp.innerHTML;
         }
+
+        function formatKsh(value) {
+            const amount = Number(value);
+            return Number.isFinite(amount) ? amount.toLocaleString() : '0';
+        }
+
+        function normalizeStatus(value) {
+            const status = String(value || 'pending').trim().toLowerCase();
+            const aliases = {
+                'ready for delivery': 'ready_for_delivery',
+                'out for delivery': 'out_for_delivery'
+            };
+            return aliases[status] || status;
+        }
+
+        function statusLabel(status) {
+            const labels = {
+                pending: 'Pending',
+                preparing: 'Preparing',
+                ready_for_delivery: 'Ready for Delivery',
+                out_for_delivery: 'Out for Delivery',
+                delivered: 'Delivered',
+                cancelled: 'Cancelled'
+            };
+            return labels[status] || 'Unknown';
+        }
+
+        function orderIdToken(orderId) {
+            return encodeURIComponent(String(orderId)).replace(/'/g, '%27');
+        }
         // ==========================================
         // 1. THE OBSERVER (The VIP Bouncer)
         // ==========================================
@@ -194,7 +225,13 @@
 
                     if (userSnap.exists()) {
                         const userData = userSnap.data();
-                        const userRole = userData.role; // "admin" or "chef"
+                        const userRole = String(userData.role || '').trim().toLowerCase();
+
+                        if (!['admin', 'chef', 'rider'].includes(userRole)) {
+                            await signOut(auth);
+                            alert("Access Denied: Your staff role is not valid.");
+                            return;
+                        }
 
                         // Save this globally
                         window.currentUserRole = userRole;
@@ -352,7 +389,20 @@
             riderGrid.innerHTML = `<div class="col-span-full text-center text-amber-500 font-bold animate-pulse py-10">Connecting...</div>`;
 
             try {
-                const q = window.query(window.collection(window.db, "orders"), window.orderBy("timestamp", "desc"), window.limit(50));
+                const activeStatuses = ["pending", "Pending", "Preparing", "Ready for Delivery", "Out for Delivery"];
+                const constraints = [
+                    window.where("status", "in", activeStatuses),
+                    window.orderBy("timestamp", "desc"),
+                    window.limit(100)
+                ];
+
+                if (window.currentUserRole === "chef") {
+                    constraints.unshift(window.where("ownerEmail", "==", window.currentStaffEmail));
+                } else if (window.currentUserRole === "rider") {
+                    constraints.unshift(window.where("pickupZone", "==", window.currentRiderZone));
+                }
+
+                const q = window.query(window.collection(window.db, "orders"), ...constraints);
                 if (window.orderListener) window.orderListener(); // Clear old listener if it exists
 
                 window.orderListener = window.onSnapshot(q, (querySnapshot) => {
@@ -366,8 +416,9 @@
                         const rawOrder = { id: documentSnapshot.id, ...documentSnapshot.data() };
 
                         // --- THE FIX: Match the exact labels sent by the checkout script ---
-                        const currentStatus = rawOrder.status || "pending";
-                        const currentTotal = rawOrder.totalAmount || 0;
+                        const statusKey = normalizeStatus(rawOrder.status);
+                        const currentStatus = statusLabel(statusKey);
+                        const orderToken = orderIdToken(rawOrder.id);
 
                         // --- 1. THE CHEF & RIDER FILTERS ---
                         let myItems = rawOrder.items || [];
@@ -388,12 +439,14 @@
                         }
 
                         // --- 2. THE PRICE RECALCULATOR (Vendor Commission Update) ---
-                        let displayTotal = currentTotal; // Admins and Riders see the full customer payment
+                        let displayTotal = Number(rawOrder.totalAmount) || 0; // Admins and Riders see the full customer payment
                         let totalLabel = "Total";
 
                         if (window.currentUserRole === "chef") {
                             // 1. Calculate the raw subtotal for ONLY the food this specific chef is cooking
-                            const chefRawSubtotal = myItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
+                            const chefRawSubtotal = myItems.reduce((sum, item) => {
+                                return sum + ((Number(item.price) || 0) * (Number(item.qty) || 0));
+                            }, 0);
 
                             // 2. Calculate the 10% Platform Fee 
                             const chefPlatformFee = Math.ceil(chefRawSubtotal * 0.10);
@@ -422,7 +475,7 @@
                         const pickupLocation = sanitize(rawOrder.pickupZone || "Pickup Zone");
 
                         // Build the items list using myItems, NOT the raw cart!
-                        const itemsList = myItems.map(i => `<li class="text-sm text-stone-300">• ${i.qty}x ${i.title}</li>`).join('');
+                        const itemsList = myItems.map(i => `<li class="text-sm text-stone-300">• ${Number(i.qty) || 0}x ${sanitize(i.title)}</li>`).join('');
 
                         // --- DYNAMICALLY BUILD THE TOTAL SECTION BASED ON ROLE ---
                         let roleBasedTotalHTML = "";
@@ -431,17 +484,17 @@
                         if (window.currentUserRole === "admin" || window.currentUserRole === "rider") {
                             roleBasedTotalHTML = `
                                 <div class="text-xs text-stone-300 space-y-0.5 mt-2">
-                                    <p>Food: <span class="font-bold">Ksh ${(rawOrder.foodSubtotal || 0).toLocaleString()}</span></p>
-                                    <p>Delivery: <span class="font-bold text-amber-500">+ Ksh ${(rawOrder.deliveryFee || 0).toLocaleString()}</span></p>
+                                    <p>Food: <span class="font-bold">Ksh ${formatKsh(rawOrder.foodSubtotal)}</span></p>
+                                    <p>Delivery: <span class="font-bold text-amber-500">+ Ksh ${formatKsh(rawOrder.deliveryFee)}</span></p>
                                     <p class="text-sm text-white border-t border-white/10 pt-1 mt-1">
-                                        Grand Total: <strong class="text-amber-400">Ksh ${((rawOrder.foodSubtotal || 0) + (rawOrder.deliveryFee || 0)).toLocaleString()}</strong>
+                                        Grand Total: <strong class="text-amber-400">Ksh ${formatKsh((Number(rawOrder.foodSubtotal) || 0) + (Number(rawOrder.deliveryFee) || 0))}</strong>
                                     </p>
                                 </div>
                             `;
                         } 
                         // 2. Chef View (Only sees their specific food payout)
                         else if (window.currentUserRole === "chef") {
-                            roleBasedTotalHTML = `<span class="text-sm text-stone-300">Chef Payout: <strong class="text-white">Ksh ${displayTotal.toLocaleString()}</strong></span>`;
+                            roleBasedTotalHTML = `<span class="text-sm text-stone-300">Chef Payout: <strong class="text-white">Ksh ${formatKsh(displayTotal)}</strong></span>`;
                         }
 
                         // Build the generic card HTML
@@ -451,7 +504,7 @@
                             <div class="bg-[#2c1e16] border border-white/5 p-5 rounded-2xl shadow-xl flex flex-col transition-all duration-500 hover:border-white/10">
                                 <div class="flex justify-between items-start border-b border-white/10 pb-4 mb-4">
                                     <div>
-                                        <span class="text-[10px] text-stone-400 font-bold uppercase tracking-wider block mb-1">ID: ${rawOrder.id.slice(0, 6)}</span>
+                                        <span class="text-[10px] text-stone-400 font-bold uppercase tracking-wider block mb-1">ID: ${sanitize(rawOrder.id).slice(0, 6)}</span>
                                         
                                         <!-- UPGRADED: INJECT THE ROLE-SPECIFIC TOTAL HTML HERE -->
                                         ${roleBasedTotalHTML}
@@ -502,38 +555,38 @@
 
                         // --- THE ADMIN ESCAPE HATCH ---
                         let adminCancelBtn = "";
-                        if (window.currentUserRole === "admin" && currentStatus !== "Cancelled" && currentStatus !== "Delivered") {
-                            adminCancelBtn = `<button onclick="window.forceCancelOrder('${rawOrder.id}')" class="w-full mt-2 bg-red-950/50 hover:bg-red-900 text-red-400 border border-red-900/50 py-2.5 rounded-xl text-sm font-bold transition-colors shadow-lg">🚨 Force Cancel (Admin)</button>`;
+                        if (window.currentUserRole === "admin" && !['cancelled', 'delivered'].includes(statusKey)) {
+                            adminCancelBtn = `<button onclick="window.forceCancelOrderFromToken('${orderToken}')" class="w-full mt-2 bg-red-950/50 hover:bg-red-900 text-red-400 border border-red-900/50 py-2.5 rounded-xl text-sm font-bold transition-colors shadow-lg">🚨 Force Cancel (Admin)</button>`;
                         }
 
                         // Sort into KITCHEN or RIDER based on status
-                        if (currentStatus.toLowerCase() === "pending") {
+                        if (statusKey === "pending") {
                             kitchenCount++;
                             kitchenGrid.innerHTML += baseCard
                                 .replace('STATUS_COLOR', 'bg-amber-500')
-                                .replace('ACTION_BUTTON', `<button onclick="updateOrderStatus('${rawOrder.id}', 'Preparing')" class="w-full mt-4 bg-amber-600 hover:bg-amber-500 text-white py-2.5 rounded-xl text-sm font-bold">Accept & Prepare</button>`)
+                                .replace('ACTION_BUTTON', `<button onclick="updateOrderStatusFromToken('${orderToken}', 'Preparing')" class="w-full mt-4 bg-amber-600 hover:bg-amber-500 text-white py-2.5 rounded-xl text-sm font-bold">Accept & Prepare</button>`)
                                 .replace('ADMIN_CANCEL_BUTTON', adminCancelBtn);
                         }
-                        else if (currentStatus === "Preparing") {
+                        else if (statusKey === "preparing") {
                             kitchenCount++;
                             kitchenGrid.innerHTML += baseCard
                                 .replace('STATUS_COLOR', 'bg-blue-500')
-                                .replace('ACTION_BUTTON', `<button onclick="updateOrderStatus('${rawOrder.id}', 'Ready for Delivery')" class="w-full mt-4 bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-xl text-sm font-bold">Food is Ready</button>`)
+                                .replace('ACTION_BUTTON', `<button onclick="updateOrderStatusFromToken('${orderToken}', 'Ready for Delivery')" class="w-full mt-4 bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-xl text-sm font-bold">Food is Ready</button>`)
                                 .replace('ADMIN_CANCEL_BUTTON', adminCancelBtn);
                         }
-                        else if (currentStatus === "Ready for Delivery") {
+                        else if (statusKey === "ready_for_delivery") {
                             kitchenCount++;
                             riderCount++;
 
                             const waitingCard = baseCard.replace('STATUS_COLOR', 'bg-purple-500').replace('ADMIN_CANCEL_BUTTON', adminCancelBtn);
                             kitchenGrid.innerHTML += waitingCard.replace('ACTION_BUTTON', `<div class="w-full mt-4 bg-black/20 text-stone-400 py-2.5 rounded-xl text-sm font-bold text-center border border-white/5">Waiting for Rider</div>`);
-                            riderGrid.innerHTML += waitingCard.replace('ACTION_BUTTON', `<button onclick="updateOrderStatus('${rawOrder.id}', 'Out for Delivery')" class="w-full mt-4 bg-purple-600 hover:bg-purple-500 text-white py-2.5 rounded-xl text-sm font-bold">Start Delivery Run</button>`);
+                            riderGrid.innerHTML += waitingCard.replace('ACTION_BUTTON', `<button onclick="updateOrderStatusFromToken('${orderToken}', 'Out for Delivery')" class="w-full mt-4 bg-purple-600 hover:bg-purple-500 text-white py-2.5 rounded-xl text-sm font-bold">Start Delivery Run</button>`);
                         }
-                        else if (currentStatus === "Out for Delivery") {
+                        else if (statusKey === "out_for_delivery") {
                             riderCount++;
                             riderGrid.innerHTML += baseCard
                                 .replace('STATUS_COLOR', 'bg-orange-500')
-                                .replace('ACTION_BUTTON', `<button onclick="updateOrderStatus('${rawOrder.id}', 'Delivered')" class="w-full mt-4 bg-orange-600 hover:bg-orange-500 text-white py-2.5 rounded-xl text-sm font-bold">Mark as Delivered</button>`)
+                                .replace('ACTION_BUTTON', `<button onclick="updateOrderStatusFromToken('${orderToken}', 'Delivered')" class="w-full mt-4 bg-orange-600 hover:bg-orange-500 text-white py-2.5 rounded-xl text-sm font-bold">Mark as Delivered</button>`)
                                 .replace('ADMIN_CANCEL_BUTTON', adminCancelBtn);
                         }
                     });
@@ -543,6 +596,8 @@
 
                 }, (error) => {
                     console.error("Live feed error: ", error);
+                    kitchenGrid.innerHTML = `<div class="col-span-full text-center text-red-400 py-10">Unable to load live orders. Please refresh or contact the administrator.</div>`;
+                    riderGrid.innerHTML = `<div class="col-span-full text-center text-red-400 py-10">Unable to load live orders. Please refresh or contact the administrator.</div>`;
                 });
 
             } catch (error) {
@@ -569,6 +624,10 @@
                 'No'
             );
         };
+
+        window.forceCancelOrderFromToken = function (token) {
+            window.forceCancelOrder(decodeURIComponent(token));
+        };
         // ==========================================
         // 4. UPDATE ORDER STATUS (Chef Action)
         // ==========================================
@@ -589,6 +648,10 @@
                 console.error("Error updating status:", error);
                 alert("Failed to update order status. Please try again.");
             }
+        };
+
+        window.updateOrderStatusFromToken = function (token, newStatus) {
+            window.updateOrderStatus(decodeURIComponent(token), newStatus);
         };
         // ==========================================
         // CUSTOM MODAL CONTROLLER (SMART BUTTONS & SCOPE FIX)

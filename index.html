@@ -237,7 +237,7 @@
                     Ksh 850</div>
 
                 <div class="mt-8 lg:mt-12">
-                    <button onclick="openOrderModal(currentIndex)"
+                    <button onclick="openCurrentHeroDish()"
                         class="flex items-center text-sm font-semibold hover:text-amber-400 transition group text-stone-200 relative">
                         <div
                             class="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-amber-600 text-white shadow-xl shadow-amber-900/50 flex items-center justify-center mr-3 md:mr-4 group-hover:bg-amber-500 group-hover:scale-105 transition transform duration-300">
@@ -1003,7 +1003,7 @@
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-xl font-bold text-white flex items-center">
                     <span class="bg-green-500 w-3 h-3 rounded-full mr-3"></span>
-                    M-Pesa Checkout
+                    M-Pesa Demo Checkout
                 </h3>
                 <button onclick="closePaymentModal()" class="text-stone-400 hover:text-white transition">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -1022,12 +1022,12 @@
                     <label class="block text-xs font-bold text-stone-400 mb-1">M-PESA NUMBER</label>
                     <input type="text" id="mpesa-number" placeholder="07XX XXX XXX"
                         class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-green-500 transition">
-                    <p class="text-[10px] text-stone-500 mt-1">This is a secure sandbox environment.</p>
+                    <p class="text-[10px] text-stone-500 mt-1">Demo only — no M-Pesa request or payment is processed.</p>
                 </div>
 
                 <button id="confirm-payment-btn" onclick="simulatePayment()"
                     class="w-full bg-green-500 hover:bg-green-400 text-black font-bold py-4 rounded-xl mt-4 transition flex justify-center items-center">
-                    <span id="payment-btn-text">Confirm & Pay</span>
+                    <span id="payment-btn-text">Confirm Demo Order</span>
                     <!-- The Loading Spinner (Hidden by default) -->
                     <svg id="payment-spinner" class="hidden w-5 h-5 ml-2 animate-spin text-black"
                         xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -1097,6 +1097,7 @@
             arrayUnion,
             arrayRemove
         } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-functions.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCrwuiHQVAAGpeyKswJ19TXzPyAwfaW8fU",
@@ -1110,6 +1111,7 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        const functions = getFunctions(app, 'us-central1');
 
         // Expose the tools to your main script
         window.db = db;
@@ -1124,6 +1126,11 @@
         window.sendPasswordResetEmail = sendPasswordResetEmail;
         window.GoogleAuthProvider = GoogleAuthProvider;
         window.signInWithPopup = signInWithPopup;
+        window.createCheckout = httpsCallable(functions, 'createCheckout');
+        window.toggleLikeCall = httpsCallable(functions, 'toggleLike');
+        // Keep this false while testing locally. Set it to true only after the
+        // Cloud Functions and matching Firestore rules have been deployed.
+        window.USE_DEPLOYED_FUNCTIONS = false;
 
         // --- NEW LIKES WINDOW ASSIGNMENTS ---
         window.doc = doc;
@@ -1310,6 +1317,12 @@
         // =============================================================
         // HELPER: MASTER CARD GENERATOR (CLEANED UP UI)
         // =============================================================
+        function escapeHtml(value) {
+            const element = document.createElement('div');
+            element.textContent = String(value ?? '');
+            return element.innerHTML;
+        }
+
         function buildMasterOrderCard(masterOrder) {
 
             // 1. Calculate True Grand Total (NEW MATRIX LOGIC)
@@ -1344,9 +1357,12 @@
                 // Capitalize status for display
                 const capStatus = i.individualStatus.charAt(0).toUpperCase() + i.individualStatus.slice(1);
 
+                const safeTitle = escapeHtml(i.title);
+                const safeQty = Number(i.qty) || 0;
+
                 return `
                 <li class="flex justify-between items-center py-0.5">
-                    <span class="${i.individualStatus === 'cancelled' ? 'line-through opacity-70' : ''}">• ${i.qty}x ${i.title}</span>
+                    <span class="${i.individualStatus === 'cancelled' ? 'line-through opacity-70' : ''}">• ${safeQty}x ${safeTitle}</span>
                     <span class="text-[9px] uppercase tracking-wider font-bold ${iColor}">[${capStatus}]</span>
                 </li>`;
             }).join('');
@@ -1356,9 +1372,9 @@
                 <div class="bg-black/20 border border-white/5 p-4 rounded-xl space-y-3 mb-3 relative overflow-hidden">
                     <div class="flex justify-between items-start">
                         <div>
-                            <span class="text-[9px] text-stone-500 block">MASTER ID: ${masterOrder.masterId.slice(0, 6).toUpperCase()}</span>
-                            <span class="text-xs text-stone-300 font-semibold">${masterOrder.deliveryArea}</span>
-                            <p class="text-[10px] text-stone-400 mt-1 uppercase tracking-wider">💳 ${masterOrder.paymentMethod}</p>
+                            <span class="text-[9px] text-stone-500 block">MASTER ID: ${escapeHtml(masterOrder.masterId).slice(0, 6).toUpperCase()}</span>
+                            <span class="text-xs text-stone-300 font-semibold">${escapeHtml(masterOrder.deliveryArea)}</span>
+                            <p class="text-[10px] text-stone-400 mt-1 uppercase tracking-wider">💳 ${escapeHtml(masterOrder.paymentMethod)}</p>
                         </div>
                         <!-- The conflicting Master Tag has been completely removed -->
                     </div>
@@ -1553,19 +1569,24 @@
         // UNIVERSAL MOBILE SCROLL LOCK
         // ==========================================
 
+        let scrollLockCount = 0;
+
         function lockScroll() {
+            scrollLockCount += 1;
             document.documentElement.classList.add('overflow-hidden', 'overscroll-none');
             document.body.classList.add('overflow-hidden', 'overscroll-none');
         }
 
         function unlockScroll() {
+            scrollLockCount = Math.max(0, scrollLockCount - 1);
+            if (scrollLockCount > 0) return;
             document.documentElement.classList.remove('overflow-hidden', 'overscroll-none');
             document.body.classList.remove('overflow-hidden', 'overscroll-none');
         }
         // NEW: Instantly lock the screen when the page loads!
         lockScroll();
 
-        let currentIndex = 1;
+        let currentIndex = -1;
         let isAnimating = false;
         let autoPlayTimer;
 
@@ -1613,6 +1634,8 @@
         });
 
         function startAutoPlay() {
+            clearInterval(autoPlayTimer);
+            if (topDishes.length < 2) return;
             autoPlayTimer = setInterval(() => {
                 let nextIndex = (currentIndex + 1) % topDishes.length;
                 swapDish(nextIndex, false);
@@ -1652,15 +1675,17 @@
                 const currentUser = window.auth ? window.auth.currentUser : null;
                 const currentUserId = currentUser ? currentUser.uid : null;
 
-                topDishes.forEach(dish => {
+                allMenuDishes.forEach(dish => {
+                    const likedBy = Array.isArray(dish.likedBy) ? dish.likedBy : [];
                     // Count the array length. If it doesn't exist yet, it's 0.
-                    dish.likes = dish.likedBy ? dish.likedBy.length : 0;
+                    dish.likes = likedBy.length;
 
                     // Check if the user's ID is inside the array
-                    dish.isLiked = currentUserId ? (dish.likedBy || []).includes(currentUserId) : false;
+                    dish.isLiked = currentUserId ? likedBy.includes(currentUserId) : false;
                 });
 
                 // 6. Update the Hero UI with the #1 dish!
+                currentIndex = -1;
                 swapDish(0, false);
 
                 // 7. NEW: Tell the bottom grid to draw all the dishes!
@@ -1668,12 +1693,28 @@
 
             } catch (error) {
                 console.error("Error fetching menu:", error);
+                allMenuDishes = [];
+                topDishes = [];
+                renderEmptyHero();
+                renderMenuGrid([]);
             }
         };
-        function nextDish() { let nextIndex = (currentIndex + 1) % topDishes.length; swapDish(nextIndex, true); }
-        function prevDish() { let prevIndex = (currentIndex - 1 + topDishes.length) % topDishes.length; swapDish(prevIndex, true); }
+        function nextDish() {
+            if (topDishes.length < 2) return;
+            swapDish((currentIndex + 1) % topDishes.length, true);
+        }
+
+        function prevDish() {
+            if (topDishes.length < 2) return;
+            swapDish((currentIndex - 1 + topDishes.length) % topDishes.length, true);
+        }
 
         function swapDish(index, isManualClick) {
+            if (!topDishes.length) {
+                renderEmptyHero();
+                return;
+            }
+            if (!Number.isInteger(index) || !topDishes[index]) return;
             if (isAnimating || index === currentIndex) return;
             if (isManualClick) clearInterval(autoPlayTimer);
             isAnimating = true; currentIndex = index; const dish = topDishes[index];
@@ -1719,7 +1760,7 @@
                 document.getElementById('teaser-text').innerText = dish.teaser;
 
                 // NEW: Update the Hero Price Tag!
-                document.getElementById('hero-price').innerText = `Ksh ${dish.rawPrice}`;
+                document.getElementById('hero-price').innerText = `Ksh ${formatKsh(dish.rawPrice)}`;
 
                 updateHeroLikeBtn();
                 centerText.style.transform = "translateY(0)";
@@ -1730,11 +1771,25 @@
             }, 800);
         }
 
+        function renderEmptyHero() {
+            clearInterval(autoPlayTimer);
+            const mainImg = document.getElementById('main-image');
+            mainImg.removeAttribute('src');
+            mainImg.alt = 'No dishes currently available';
+            document.getElementById('tagline').innerText = 'MENU UPDATING';
+            document.getElementById('title-top').innerText = 'NO DISHES';
+            document.getElementById('title-bottom').innerText = 'AVAILABLE YET';
+            document.getElementById('chef-name').innerText = 'Mombasa CTO';
+            document.getElementById('teaser-text').innerText = 'Please check back shortly while our chefs update the menu.';
+            document.getElementById('hero-price').innerText = '';
+            document.getElementById('likes-count').innerText = '0 LIKES';
+        }
+
         // ==========================================
         // SMART LIKES SYSTEM (Firebase Integrated)
         // ==========================================
 
-        async function handleLikeToggle(dishIndex) {
+        async function handleLikeToggle(dishId) {
             const currentUser = window.auth ? window.auth.currentUser : null;
 
             // 1. Block guests from liking
@@ -1743,37 +1798,36 @@
                 return;
             }
 
-            const dish = topDishes[dishIndex];
+            const dish = allMenuDishes.find(menuDish => menuDish.id === dishId);
 
             // Safety check: Ensure the dish has a database ID before trying to update it
-            if (!dish.id) {
+            if (!dish || !dish.id) {
                 console.error("No dish ID found. Is this data from Firebase?");
                 return;
             }
 
-            const dishRef = window.doc(window.db, "menu", dish.id);
-            const userId = currentUser.uid;
-
             try {
-                if (dish.isLiked) {
-                    // UNLIKE: Remove their ID from the database array
-                    await window.updateDoc(dishRef, {
-                        likedBy: window.arrayRemove(userId)
+                if (window.USE_DEPLOYED_FUNCTIONS) {
+                    const result = await window.toggleLikeCall({ dishId: dish.id });
+                    dish.isLiked = result.data.isLiked;
+                    dish.likes = result.data.likes;
+                } else if (dish.isLiked) {
+                    await window.updateDoc(window.doc(window.db, "menu", dish.id), {
+                        likedBy: window.arrayRemove(currentUser.uid)
                     });
                     dish.isLiked = false;
-                    dish.likes -= 1;
+                    dish.likes = Math.max(0, dish.likes - 1);
                 } else {
-                    // LIKE: Add their ID to the database array
-                    await window.updateDoc(dishRef, {
-                        likedBy: window.arrayUnion(userId)
+                    await window.updateDoc(window.doc(window.db, "menu", dish.id), {
+                        likedBy: window.arrayUnion(currentUser.uid)
                     });
                     dish.isLiked = true;
                     dish.likes += 1;
                 }
 
                 // Update the UI to reflect the change immediately
-                if (dishIndex === currentIndex) updateHeroLikeBtn();
-                updateGridLikeBtn(dishIndex);
+                if (topDishes[currentIndex]?.id === dish.id) updateHeroLikeBtn();
+                updateGridLikeBtn(dish.id);
 
             } catch (error) {
                 console.error("Error toggling like:", error);
@@ -1783,12 +1837,12 @@
 
         // The click handlers that trigger the smart function
         window.toggleHeroLike = function () {
-            handleLikeToggle(currentIndex);
+            handleLikeToggle(topDishes[currentIndex]?.id);
         };
 
         window.toggleGridLike = function (index, event) {
             event.stopPropagation();
-            handleLikeToggle(index);
+            handleLikeToggle(allMenuDishes[index]?.id);
         };
 
         // ==========================================
@@ -1812,8 +1866,9 @@
             }
         }
 
-        function updateGridLikeBtn(index) {
-            const dish = topDishes[index];
+        function updateGridLikeBtn(dishId) {
+            const index = allMenuDishes.findIndex(menuDish => menuDish.id === dishId);
+            const dish = allMenuDishes[index];
             const count = document.getElementById('grid-like-count-' + index);
             const icon = document.getElementById('grid-like-icon-' + index);
             if (!count || !icon || !dish) return;
@@ -1831,14 +1886,15 @@
 
         // Seller Modal
         function openSellerModal() {
+            if (!topDishes[currentIndex]) return;
             document.getElementById('seller-chef-name').innerText = topDishes[currentIndex].chef;
             document.getElementById('seller-bio').innerText = topDishes[currentIndex].bio;
-            document.getElementById('seller-phone').href = "tel:" + topDishes[currentIndex].phone;
+            document.getElementById('seller-phone').href = "tel:" + String(topDishes[currentIndex].phone || '').replace(/[^\d+]/g, '');
 
             document.getElementById('seller-modal').classList.remove('hidden');
 
             // --- ADDED: Freeze the background scroll ---
-            document.body.classList.add('overflow-hidden');
+            lockScroll();
 
             setTimeout(() => {
                 document.getElementById('seller-modal-content').classList.remove('scale-95', 'opacity-0');
@@ -1851,7 +1907,7 @@
             document.getElementById('seller-modal-content').classList.add('scale-95', 'opacity-0');
 
             // --- ADDED: Unfreeze the background scroll instantly ---
-            document.body.classList.remove('overflow-hidden');
+            unlockScroll();
 
             setTimeout(() => {
                 document.getElementById('seller-modal').classList.add('hidden');
@@ -1862,12 +1918,20 @@
         let cart = [];
         let currentOrderIndex = 0; let currentQty = 1;
 
+        function openCurrentHeroDish() {
+            const heroDish = topDishes[currentIndex];
+            if (!heroDish) return;
+            const menuIndex = allMenuDishes.findIndex(dish => dish.id === heroDish.id);
+            if (menuIndex >= 0) openOrderModal(menuIndex);
+        }
+
         function openOrderModal(index) {
             currentOrderIndex = index;
             currentQty = 1;
 
             // --- NEW: Pull from the FULL database, not just the Top 4! ---
             const dish = allMenuDishes[index];
+            if (!dish) return;
 
             document.getElementById('order-title').innerText = dish.topTitle + (dish.bottomTitle ? " " + dish.bottomTitle : "");
             document.getElementById('order-teaser').innerText = dish.teaser;
@@ -1875,7 +1939,7 @@
             document.getElementById('order-bio').innerText = dish.bio;
 
             // Format phone number for WhatsApp API (remove the + symbol)
-            const waNumber = dish.phone.replace('+', '');
+            const waNumber = String(dish.phone || '').replace(/\D/g, '');
             const waMessage = encodeURIComponent(`Hi ${dish.chef}, I am interested in your ${dish.topTitle} ${dish.bottomTitle} from Mombasa CTO!`);
             document.getElementById('order-whatsapp').href = `https://wa.me/${waNumber}?text=${waMessage}`;
 
@@ -1886,7 +1950,7 @@
             document.getElementById('order-modal').classList.remove('hidden');
 
             // Freeze the background scroll
-            document.body.classList.add('overflow-hidden');
+            lockScroll();
 
             setTimeout(() => {
                 document.getElementById('order-modal-content').classList.remove('scale-95', 'opacity-0');
@@ -1898,7 +1962,7 @@
             document.getElementById('order-modal-content').classList.add('scale-95', 'opacity-0');
 
             // --- ADDED: Unfreeze the background scroll instantly ---
-            document.body.classList.remove('overflow-hidden');
+            unlockScroll();
 
             setTimeout(() => { document.getElementById('order-modal').classList.add('hidden'); }, 300);
         }
@@ -1909,7 +1973,8 @@
         }
 
         function updateOrderTotal() {
-            document.getElementById('order-total').innerText = "Ksh " + (allMenuDishes[currentOrderIndex].rawPrice * currentQty).toLocaleString();
+            const price = Number(allMenuDishes[currentOrderIndex]?.rawPrice) || 0;
+            document.getElementById('order-total').innerText = "Ksh " + (price * currentQty).toLocaleString();
         }
 
         function addToCart() {
@@ -1921,6 +1986,7 @@
             } else {
                 cart.push({
                     id: currentOrderIndex,
+                    dishId: dish.id,
                     title: dish.topTitle + (dish.bottomTitle ? " " + dish.bottomTitle : ""),
                     chef: dish.chef,
                     ownerEmail: dish.ownerEmail,
@@ -1932,9 +1998,9 @@
                     pickupZone: dish.pickupZone || "Unassigned",
                     // ----------------------------
 
-                    price: dish.rawPrice,
+                    price: Number(dish.rawPrice) || 0,
                     qty: currentQty,
-                    image: dish.image
+                    image: safeImageUrl(dish.image)
                 });
             }
 
@@ -2022,24 +2088,28 @@
 
             // Loop through each location and render a header, then its items
             for (const [zone, items] of Object.entries(groupedCart)) {
+                const safeZone = escapeText(zone);
 
                 // 1. Add the Zone Header
                 container.innerHTML += `
                 <div class="mt-4 mb-2 flex items-center gap-2 px-1">
                     <span class="text-amber-500"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg></span>
-                    <h3 class="text-xs font-bold text-stone-400 uppercase tracking-wider">Pickup: ${zone}</h3>
+                    <h3 class="text-xs font-bold text-stone-400 uppercase tracking-wider">Pickup: ${safeZone}</h3>
                 </div>
                 `;
 
                 // 2. Add the Items for this specific Zone
                 items.forEach(item => {
                     const itemTotal = item.price * item.qty;
+                    const safeTitle = escapeText(item.title);
+                    const safeChef = escapeText(item.chef);
+                    const safeImage = safeImageUrl(item.image);
                     container.innerHTML += `
                     <div class="flex items-center gap-3 bg-white/5 p-3 rounded-2xl border border-white/5 mb-2">
-                        <img src="${item.image}" class="w-14 h-14 rounded-full object-cover shadow-md" alt="${item.title}">
+                        <img src="${safeImage}" class="w-14 h-14 rounded-full object-cover shadow-md" alt="${safeTitle}">
                         <div class="flex-1">
-                            <h4 class="text-sm font-bold text-white line-clamp-1">${item.title}</h4>
-                            <p class="text-[10px] text-amber-500 font-semibold mb-1.5">${item.chef}</p>
+                            <h4 class="text-sm font-bold text-white line-clamp-1">${safeTitle}</h4>
+                            <p class="text-[10px] text-amber-500 font-semibold mb-1.5">${safeChef}</p>
                             <span class="text-sm font-bold text-white block">Ksh ${itemTotal.toLocaleString()}</span>
                         </div>
                         
@@ -2185,6 +2255,9 @@
             // 2. Close the cart drawer
             closeCart();
 
+            // Keep the page fixed while the payment dialog is open.
+            lockScroll();
+
             // 3. Animate the payment modal opening
             document.getElementById('payment-modal').classList.remove('hidden');
             setTimeout(() => {
@@ -2198,6 +2271,7 @@
             document.getElementById('payment-modal-content').classList.add('scale-95', 'opacity-0');
             setTimeout(() => {
                 document.getElementById('payment-modal').classList.add('hidden');
+                unlockScroll();
             }, 300);
         }
         async function simulatePayment() {
@@ -2222,7 +2296,7 @@
             setTimeout(() => {
 
                 // Success state UI changes
-                btnText.innerText = "Payment Successful!";
+                btnText.innerText = "Demo Order Confirmed!";
                 spinner.classList.add('hidden');
                 btn.classList.remove('bg-green-500', 'hover:bg-green-400');
                 btn.classList.add('bg-white'); // Flash white for success
@@ -2239,7 +2313,7 @@
 
                     // Reset the payment button back to default for the next customer
                     btn.disabled = false;
-                    btnText.innerText = "Confirm & Pay";
+                    btnText.innerText = "Confirm Demo Order";
                     btn.classList.add('bg-green-500', 'hover:bg-green-400');
                     btn.classList.remove('bg-white');
                     document.getElementById('mpesa-number').value = '';
@@ -2497,6 +2571,26 @@
             }, 50);
         }
 
+        function escapeText(value) {
+            const element = document.createElement('div');
+            element.textContent = String(value ?? '');
+            return element.innerHTML;
+        }
+
+        function safeImageUrl(value) {
+            try {
+                const url = new URL(String(value ?? ''), window.location.href);
+                return (url.protocol === 'https:' || url.protocol === 'http:') ? url.href : '';
+            } catch {
+                return '';
+            }
+        }
+
+        function formatKsh(value) {
+            const amount = Number(value);
+            return Number.isFinite(amount) ? amount.toLocaleString() : '0';
+        }
+
         function renderMenuGrid(dishesToRender) {
             const grid = document.getElementById('dynamic-menu-grid');
             grid.innerHTML = '';
@@ -2509,13 +2603,18 @@
             dishesToRender.forEach(dish => {
                 const originalIndex = allMenuDishes.indexOf(dish);
                 const heartClass = dish.isLiked ? "text-red-500" : "text-white";
+                const safeImage = safeImageUrl(dish.image);
+                const safeTitle = escapeText(`${dish.topTitle ?? ''} ${dish.bottomTitle ?? ''}`.trim());
+                const safeChef = escapeText(dish.chef);
+                const safeZone = escapeText(dish.pickupZone || 'Main Kitchen');
+                const price = formatKsh(dish.rawPrice);
 
                 grid.innerHTML += `
                 <div onclick="openOrderModal(${originalIndex})" class="flex flex-col h-full bg-[#3d2a1d]/40 border border-white/5 rounded-3xl p-4 hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(0,0,0,0.5)] hover:bg-[#3d2a1d]/60 transition-all duration-300 group cursor-pointer animate-title">
                     <div class="relative overflow-hidden rounded-2xl mb-4">
-                        <img src="${dish.image}" class="w-full h-48 object-cover group-hover:scale-110 transition duration-500" alt="Food">
+                        <img src="${safeImage}" class="w-full h-48 object-cover group-hover:scale-110 transition duration-500" alt="${safeTitle}">
                         <div class="absolute top-3 left-3 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-xl text-white font-bold text-[10px] tracking-wider border border-white/10 shadow-lg">
-                            Ksh ${dish.rawPrice}
+                            Ksh ${price}
                         </div>
                         
                         <button onclick="toggleGridLike(${originalIndex}, event)" class="absolute top-3 right-3 bg-black/60 backdrop-blur-md px-2.5 py-1.5 rounded-xl flex items-center shadow-lg border border-white/10 md:hover:bg-black/80 transition-colors group/btn z-10">
@@ -2524,12 +2623,12 @@
                         </button>
                     </div>
                     <div class="mb-4 flex-1">
-                        <h3 class="text-lg font-bold text-white mb-1 group-hover:text-amber-400 transition">${dish.topTitle} ${dish.bottomTitle}</h3>
-                        <p class="text-xs text-stone-400 font-medium">${dish.chef}</p>
+                        <h3 class="text-lg font-bold text-white mb-1 group-hover:text-amber-400 transition">${safeTitle}</h3>
+                        <p class="text-xs text-stone-400 font-medium">${safeChef}</p>
                         
                         <!-- ADDED PICKUP LOCATION BADGE HERE -->
                         <p class="text-[11px] text-amber-500/90 font-semibold mt-1.5 flex items-center gap-1">
-                            📍 ${dish.pickupZone || "Main Kitchen"}
+                            📍 ${safeZone}
                         </p>
                     </div>
                     
@@ -2618,7 +2717,7 @@
             // ... (the rest of your openMyOrders logic stays exactly the same)
 
             // --- Lock the background scroll ---
-            document.body.classList.add('overflow-hidden');
+            lockScroll();
 
             document.getElementById('orders-drawer-bg').classList.remove('hidden');
             setTimeout(() => {
@@ -2635,7 +2734,7 @@
             document.getElementById('orders-drawer').classList.add('translate-x-full');
 
             // --- Unlock the background scroll ---
-            document.body.classList.remove('overflow-hidden');
+            unlockScroll();
 
             setTimeout(() => {
                 document.getElementById('orders-drawer-bg').classList.add('hidden');
@@ -2690,96 +2789,28 @@
         // MULTI-VENDOR CHECKOUT (SUB-ORDER ARCHITECTURE)
         // ==========================================
         async function submitFinalOrder(paymentType) {
+            if (!window.USE_DEPLOYED_FUNCTIONS) {
+                return submitLocalOrder(paymentType);
+            }
+
             try {
-                // 1. Group the cart items by their CHEF
-                const groupedCart = {};
-
-                cart.forEach(item => {
-                    const chefEmail = item.ownerEmail || "unknown@chef.com";
-                    if (!groupedCart[chefEmail]) {
-                        groupedCart[chefEmail] = [];
-                    }
-                    groupedCart[chefEmail].push(item);
-                });
-
-                const uniqueChefs = Object.keys(groupedCart);
-
-                // 2. Grab Shared Order Details (Location, Date, Time, Phone, Notes)
                 const deliveryTextSpan = document.getElementById('delivery-selected-text');
-                let locationName = "Pickup";
-                if (deliveryTextSpan && deliveryTextSpan.innerText !== "Select your area...") {
-                    // This safely extracts the clean name, e.g., "Nyali"
-                    locationName = deliveryTextSpan.innerText.split('(')[0].trim();
-                }
-
+                const locationName = deliveryTextSpan ? deliveryTextSpan.innerText.trim() : '';
                 const dateInput = document.getElementById('delivery-date');
                 const timeInput = document.getElementById('delivery-time');
-                const orderDate = (dateInput && dateInput.value) ? dateInput.value : "Today";
-                const orderTime = (timeInput && timeInput.value) ? timeInput.value : "ASAP";
                 const notesInput = document.getElementById('delivery-notes');
-                const notes = (notesInput && notesInput.value.trim() !== "") ? notesInput.value : "No specific instructions.";
-                const phoneInput = document.getElementById('delivery-phone').value || "N/A";
+                const phoneInput = document.getElementById('delivery-phone');
+                const result = await window.createCheckout({
+                    items: cart.map(item => ({ dishId: item.dishId, qty: item.qty })),
+                    deliveryArea: locationName,
+                    deliveryDate: dateInput?.value || 'Today',
+                    deliveryTime: timeInput?.value || 'ASAP',
+                    deliveryNotes: notesInput?.value || '',
+                    phone: phoneInput?.value || '',
+                    paymentType: paymentType === 'Pay on Delivery' ? 'cod' : 'mock_mpesa'
+                });
 
-                // Generate a single Master Order ID for the customer's receipt
-                const masterOrderId = Math.random().toString(36).substring(2, 8).toUpperCase();
-
-                // 3. LOOP THROUGH EACH CHEF AND CREATE 100% INDEPENDENT ORDERS
-                for (const chefEmail of uniqueChefs) {
-                    const chefItems = groupedCart[chefEmail];
-
-                    // Grab the zone and name specifically for this chef's food
-                    const chefZone = chefItems[0].pickupZone || "Main Kitchen";
-                    const chefName = chefItems[0].chef.toUpperCase().replace(/\s+/g, '');
-
-                    // FIX 2: Calculate the precise delivery fee for this specific route!
-                    const specificDeliveryFee = getDeliveryFee(chefZone, locationName);
-
-                    // --- CHEF-SPECIFIC FINANCIAL MATH ---
-                    const chefSubtotal = chefItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
-                    const chefPlatformFee = Math.ceil(chefSubtotal * 0.10);
-                    const chefPayout = chefSubtotal - chefPlatformFee;
-
-                    // The total customer cost for this leg (Food + Delivery)
-                    const customerTotalForThisLeg = chefSubtotal + specificDeliveryFee;
-
-                    const subOrderId = `${masterOrderId}-${chefName}`;
-                    const customerName = (window.auth && window.auth.currentUser && window.auth.currentUser.displayName) ? window.auth.currentUser.displayName : "Guest";
-
-                    // Build the Sub-Order Ticket
-                    const orderTicket = {
-                        masterOrderId: masterOrderId,
-                        subOrderId: subOrderId,
-                        pickupZone: chefZone,
-                        ownerEmail: chefEmail,
-                        chefPhone: chefItems[0].chefPhone || "No Phone",
-                        customerEmail: window.auth.currentUser.email.toLowerCase(),
-                        customerName: customerName,
-                        customerPhone: phoneInput,
-                        paymentMethod: paymentType,
-                        deliveryNotes: notes,
-                        items: chefItems,
-
-                        // --- SPLIT FINANCIAL DATA ---
-                        totalAmount: customerTotalForThisLeg,
-                        foodSubtotal: chefSubtotal,
-                        deliveryFee: specificDeliveryFee, // <-- SAVES THE CORRECT FEE NOW
-                        platformFee: chefPlatformFee,
-                        chefPayout: chefPayout,
-                        // ----------------------------
-
-                        status: "pending",
-                        deliveryArea: locationName,
-                        deliveryDate: orderDate,
-                        deliveryTime: orderTime,
-                        timestamp: window.serverTimestamp()
-                    };
-
-                    // Push each ticket to Firestore independently
-                    await window.addDoc(window.collection(window.db, "orders"), orderTicket);
-                }
-
-                // 4. Final Success Feedback
-                window.showModal("Success!", "Order successfully placed!", "alert");
+                window.showModal("Success!", `Order ${result.data.masterOrderId} successfully placed!`, "alert");
 
                 // Close drawer and reset UI
                 closeCart();
@@ -2787,11 +2818,77 @@
                 updateCartBadge();
                 renderCart();
                 if (notesInput) notesInput.value = '';
-                if (document.getElementById('delivery-phone')) document.getElementById('delivery-phone').value = '';
+                if (phoneInput) phoneInput.value = '';
 
             } catch (error) {
-                console.error("Database Sync Error:", error);
-                alert("Failed to sync order to database. Check console.");
+                console.error("Checkout Error:", error);
+                window.showModal("Checkout Failed", error.message || "We could not place your order. Please try again.", "error");
+            }
+        }
+
+        // Temporary local test mode. This mirrors the original browser-based
+        // checkout and is intentionally bypassed once the backend is deployed.
+        async function submitLocalOrder(paymentType) {
+            try {
+                const groupedCart = {};
+                cart.forEach(item => {
+                    const chefEmail = item.ownerEmail || "unknown@chef.com";
+                    if (!groupedCart[chefEmail]) groupedCart[chefEmail] = [];
+                    groupedCart[chefEmail].push(item);
+                });
+
+                const deliveryTextSpan = document.getElementById('delivery-selected-text');
+                const locationName = deliveryTextSpan && deliveryTextSpan.innerText !== "Select your area..."
+                    ? deliveryTextSpan.innerText.split('(')[0].trim()
+                    : "Pickup";
+                const dateInput = document.getElementById('delivery-date');
+                const timeInput = document.getElementById('delivery-time');
+                const notesInput = document.getElementById('delivery-notes');
+                const phoneInput = document.getElementById('delivery-phone');
+                const masterOrderId = Math.random().toString(36).substring(2, 8).toUpperCase();
+
+                for (const [chefEmail, chefItems] of Object.entries(groupedCart)) {
+                    const chefZone = chefItems[0].pickupZone || "Main Kitchen";
+                    const chefSubtotal = chefItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
+                    const deliveryFee = getDeliveryFee(chefZone, locationName);
+                    const platformFee = Math.ceil(chefSubtotal * 0.10);
+                    const chefName = String(chefItems[0].chef || 'Chef').toUpperCase().replace(/\s+/g, '');
+
+                    await window.addDoc(window.collection(window.db, "orders"), {
+                        masterOrderId,
+                        subOrderId: `${masterOrderId}-${chefName}`,
+                        pickupZone: chefZone,
+                        ownerEmail: chefEmail,
+                        chefPhone: chefItems[0].chefPhone || "No Phone",
+                        customerEmail: window.auth.currentUser.email.toLowerCase(),
+                        customerName: window.auth.currentUser.displayName || "Guest",
+                        customerPhone: phoneInput?.value || "N/A",
+                        paymentMethod: paymentType,
+                        deliveryNotes: notesInput?.value.trim() || "No specific instructions.",
+                        items: chefItems,
+                        totalAmount: chefSubtotal + deliveryFee,
+                        foodSubtotal: chefSubtotal,
+                        deliveryFee,
+                        platformFee,
+                        chefPayout: chefSubtotal - platformFee,
+                        status: "pending",
+                        deliveryArea: locationName,
+                        deliveryDate: dateInput?.value || "Today",
+                        deliveryTime: timeInput?.value || "ASAP",
+                        timestamp: window.serverTimestamp()
+                    });
+                }
+
+                window.showModal("Success!", "Demo order successfully placed!", "alert");
+                closeCart();
+                cart = [];
+                updateCartBadge();
+                renderCart();
+                if (notesInput) notesInput.value = '';
+                if (phoneInput) phoneInput.value = '';
+            } catch (error) {
+                console.error("Local Checkout Error:", error);
+                window.showModal("Checkout Failed", "The demo order could not be saved. Please try again.", "error");
             }
         }
         // ==========================================
@@ -2935,6 +3032,8 @@
             const actionsEl = document.getElementById('custom-modal-actions');
             const iconEl = document.getElementById('custom-modal-icon');
 
+            if (overlay.classList.contains('hidden')) lockScroll();
+
             // 1. Set Text
             titleEl.innerText = title;
             messageEl.innerText = message;
@@ -2987,6 +3086,7 @@
 
             setTimeout(() => {
                 overlay.classList.add('hidden');
+                unlockScroll();
             }, 300);
         };
     </script>
