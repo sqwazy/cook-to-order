@@ -1550,7 +1550,7 @@
         // NEW: Instantly lock the screen when the page loads!
         lockScroll();
 
-        let currentIndex = 0;
+        let currentIndex = 1;
         let isAnimating = false;
         let autoPlayTimer;
 
@@ -1649,7 +1649,7 @@
                 swapDish(0, false);
 
                 // 7. NEW: Tell the bottom grid to draw all the dishes!
-                setFilter('All');
+                setFilter('All', false);   // false = don't scroll, this is a silent background refresh
 
             } catch (error) {
                 console.error("Error fetching menu:", error);
@@ -2419,18 +2419,19 @@
             handleSearch(activeInputId);
         }
 
-        function setFilter(category) {
+        function setFilter(category, shouldScroll = true) {
             currentFilter = category;
 
-            // Update button styles visually
             document.querySelectorAll('.filter-btn').forEach(btn => {
                 btn.className = "filter-btn shrink-0 px-5 py-2 rounded-full bg-white/5 hover:bg-white/10 text-stone-300 text-sm font-semibold transition border border-white/5";
             });
             document.getElementById('filter-' + category).className = "filter-btn active-filter shrink-0 px-5 py-2 rounded-full bg-amber-600 text-white text-sm font-bold shadow-lg shadow-amber-900/40 transition";
 
             applySortAndFilter();
-            scrollToGrid();
 
+            if (shouldScroll) {
+                scrollToGrid();
+            }
         }
 
         function applySortAndFilter() {
