@@ -353,71 +353,88 @@
     <main id="menu-section"
         class="relative w-full bg-[#1a110c]/80 backdrop-blur-sm border-t border-white/5 py-16 lg:py-24 z-20">
         <div class="w-full max-w-[1400px] mx-auto px-6 lg:px-10">
-            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-12 gap-6">
+            <!-- HEADER SECTION -->
+            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-8 gap-6">
                 <div>
                     <p class="text-amber-500 font-semibold tracking-widest uppercase text-sm mb-2">Discover</p>
                     <h2 class="text-3xl md:text-5xl font-extrabold text-white">Full Menu.</h2>
                 </div>
 
-                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full lg:w-auto">
-                    <div
-                        class="flex gap-2 overflow-x-auto pb-2 sm:pb-0 w-full sm:w-auto hide-scrollbar scroll-smooth snap-x">
-                        <button onclick="setFilter('All')" id="filter-All"
-                            class="filter-btn active-filter shrink-0 px-5 py-2 rounded-full bg-amber-600 text-white text-sm font-bold shadow-lg shadow-amber-900/40 transition">All</button>
-                        <button onclick="setFilter('Street Food')" id="filter-Street Food"
-                            class="filter-btn shrink-0 px-5 py-2 rounded-full bg-white/5 hover:bg-white/10 text-stone-300 text-sm font-semibold transition border border-white/5">Street
-                            Food</button>
-                        <button onclick="setFilter('Swahili Classics')" id="filter-Swahili Classics"
-                            class="filter-btn shrink-0 px-5 py-2 rounded-full bg-white/5 hover:bg-white/10 text-stone-300 text-sm font-semibold transition border border-white/5">Swahili
-                            Classics</button>
-                        <button onclick="setFilter('Sweet Treats')" id="filter-Sweet Treats"
-                            class="filter-btn shrink-0 px-5 py-2 rounded-full bg-white/5 hover:bg-white/10 text-stone-300 text-sm font-semibold transition border border-white/5">Sweet
-                            Treats</button>
+                <!-- RIGHT CONTROLS: ALL THREE DROPDOWNS GROUPED -->
+                <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+                    <!-- PICKUP ZONE FILTER -->
+                    <div class="relative shrink-0 flex-1 sm:flex-initial">
+                        <select id="zone-filter" onchange="applySortAndFilter()"
+                            class="w-full sm:w-auto appearance-none bg-[#3d2a1d]/80 border border-white/10 text-white text-sm font-semibold py-2 pl-4 pr-10 rounded-xl focus:outline-none focus:border-amber-500 cursor-pointer transition">
+                            <option value="All">All Locations</option>
+                            <option value="Nyali">Nyali</option>
+                            <option value="Tudor">Tudor</option>
+                            <option value="Majengo">Majengo</option>
+                            <option value="Mombasa CBD">Mombasa CBD</option>
+                        </select>
+                        <div
+                            class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-amber-500">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </div>
                     </div>
 
-                    <!-- RIGHT CONTROLS: CHEF & SORT DROPDOWNS -->
-                    <div class="flex gap-3 w-full sm:w-auto mt-4 sm:mt-0">
-
-                        <!-- NEW: CHEF FILTER -->
-                        <div class="relative shrink-0 w-[50%] sm:w-auto">
-                            <select id="chef-filter" onchange="applySortAndFilter()"
-                                class="w-full sm:w-auto appearance-none bg-[#3d2a1d]/80 border border-white/10 text-white text-sm font-semibold py-2 pl-4 pr-10 rounded-xl focus:outline-none focus:border-amber-500 cursor-pointer transition">
-                                <option value="All">All Chefs</option>
-                                <option value="Chef Ali">Chef Ali</option>
-                                <option value="Chef Amina">Chef Amina</option>
-                                <option value="Mama Fatma">Mama Fatma</option>
-                                <option value="Chef Swalah">Chef Swalah</option>
-                            </select>
-                            <div
-                                class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-amber-500">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
-                                </svg>
-                            </div>
+                    <!-- CHEF FILTER -->
+                    <div class="relative shrink-0 flex-1 sm:flex-initial">
+                        <select id="chef-filter" onchange="applySortAndFilter()"
+                            class="w-full sm:w-auto appearance-none bg-[#3d2a1d]/80 border border-white/10 text-white text-sm font-semibold py-2 pl-4 pr-10 rounded-xl focus:outline-none focus:border-amber-500 cursor-pointer transition">
+                            <option value="All">All Chefs</option>
+                            <option value="Chef Ali">Chef Ali</option>
+                            <option value="Chef Amina">Chef Amina</option>
+                            <option value="Mama Fatma">Mama Fatma</option>
+                            <option value="Chef Swalah">Chef Swalah</option>
+                        </select>
+                        <div
+                            class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-amber-500">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
+                            </svg>
                         </div>
+                    </div>
 
-                        <!-- EXISTING: SORT DROPDOWN -->
-                        <div class="relative shrink-0 w-[50%] sm:w-auto">
-                            <select id="sort-dropdown" onchange="applySortAndFilter()"
-                                class="w-full sm:w-auto appearance-none bg-[#3d2a1d]/80 border border-white/10 text-white text-sm font-semibold py-2 pl-4 pr-10 rounded-xl focus:outline-none focus:border-amber-500 cursor-pointer transition">
-                                <option value="likes">Sort by: Most Liked</option>
-                                <option value="price-low">Price: Low to High</option>
-                                <option value="price-high">Price: High to Low</option>
-                            </select>
-                            <div
-                                class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-amber-500">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
-                                </svg>
-                            </div>
+                    <!-- SORT DROPDOWN -->
+                    <div class="relative shrink-0 flex-1 sm:flex-initial">
+                        <select id="sort-dropdown" onchange="applySortAndFilter()"
+                            class="w-full sm:w-auto appearance-none bg-[#3d2a1d]/80 border border-white/10 text-white text-sm font-semibold py-2 pl-4 pr-10 rounded-xl focus:outline-none focus:border-amber-500 cursor-pointer transition">
+                            <option value="likes">Sort by: Most Liked</option>
+                            <option value="price-low">Price: Low to High</option>
+                            <option value="price-high">Price: High to Low</option>
+                        </select>
+                        <div
+                            class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-amber-500">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
+                            </svg>
                         </div>
-
                     </div>
                 </div>
             </div>
 
+            <!-- CATEGORY PILLS ROW (Clean separate row underneath) -->
+            <div class="flex gap-2 overflow-x-auto pb-4 w-full hide-scrollbar scroll-smooth snap-x mb-2">
+                <button onclick="setFilter('All')" id="filter-All"
+                    class="filter-btn active-filter shrink-0 px-5 py-2 rounded-full bg-amber-600 text-white text-sm font-bold shadow-lg shadow-amber-900/40 transition">All</button>
+                <button onclick="setFilter('Street Food')" id="filter-Street Food"
+                    class="filter-btn shrink-0 px-5 py-2 rounded-full bg-white/5 hover:bg-white/10 text-stone-300 text-sm font-semibold transition border border-white/5">Street
+                    Food</button>
+                <button onclick="setFilter('Swahili Classics')" id="filter-Swahili Classics"
+                    class="filter-btn shrink-0 px-5 py-2 rounded-full bg-white/5 hover:bg-white/10 text-stone-300 text-sm font-semibold transition border border-white/5">Swahili
+                    Classics</button>
+                <button onclick="setFilter('Sweet Treats')" id="filter-Sweet Treats"
+                    class="filter-btn shrink-0 px-5 py-2 rounded-full bg-white/5 hover:bg-white/10 text-stone-300 text-sm font-semibold transition border border-white/5">Sweet
+                    Treats</button>
+            </div>
+
+            <!-- MENU GRID -->
             <div id="dynamic-menu-grid"
                 class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 min-h-[70vh] content-start">
             </div>
@@ -742,7 +759,6 @@
             </svg>
         </button>
     </div>
-    </div>
 
     <div id="nav-drawer-bg"
         class="fixed inset-0 z-[300] bg-black/60 backdrop-blur-sm hidden transition-opacity opacity-0 duration-300 lg:hidden"
@@ -937,7 +953,6 @@
                 </button>
             </div>
         </div>
-    </div>
     </div>
     <div id="orders-drawer-bg"
         class="fixed inset-0 z-[300] bg-black/60 backdrop-blur-sm hidden transition-opacity opacity-0 duration-300"
@@ -2437,22 +2452,24 @@
         function applySortAndFilter() {
             const sortMethod = document.getElementById('sort-dropdown').value;
             const chefMethod = document.getElementById('chef-filter').value;
+            const zoneMethod = document.getElementById('zone-filter').value; // Grab the new zone filter value
 
             // Use allMenuDishes so the grid shows the full database
             let displayDishes = [...allMenuDishes];
 
-            // 1. Apply Filters (Category, Chef, AND Search combined)
+            // 1. Apply Filters (Category, Chef, Zone, AND Search combined)
             displayDishes = displayDishes.filter(dish => {
                 const matchesCategory = (currentFilter === 'All') || (dish.category === currentFilter);
                 const matchesChef = (chefMethod === 'All') || (dish.chef === chefMethod);
+                const matchesZone = (zoneMethod === 'All') || (dish.pickupZone === zoneMethod);
 
-                // <-- NEW: Check if the dish title or chef name contains the typed letters
+                // Check if the dish title or chef name contains the typed letters
                 const fullDishName = (dish.topTitle + " " + dish.bottomTitle).toLowerCase();
                 const matchesSearch = (searchQuery === '') ||
                     fullDishName.includes(searchQuery) ||
                     dish.chef.toLowerCase().includes(searchQuery);
 
-                return matchesCategory && matchesChef && matchesSearch; // Must pass all 3 tests!
+                return matchesCategory && matchesChef && matchesZone && matchesSearch; // Must pass all filters
             });
 
             // 2. Apply Sort
@@ -2465,7 +2482,6 @@
             }
 
             renderMenuGrid(displayDishes);
-
         }
         // ==========================================
         // NEW: Helper function to scroll to the grid
@@ -2486,13 +2502,11 @@
             grid.innerHTML = '';
 
             if (dishesToRender.length === 0) {
-                // Updated message to be more inclusive of the chef filter
                 grid.innerHTML = `<p class="text-stone-400 col-span-full text-center py-12">No dishes found matching your current filters.</p>`;
                 return;
             }
 
             dishesToRender.forEach(dish => {
-                // Find the dish's index in the global array so the Modal and Like buttons target the right item
                 const originalIndex = allMenuDishes.indexOf(dish);
                 const heartClass = dish.isLiked ? "text-red-500" : "text-white";
 
@@ -2505,15 +2519,18 @@
                         </div>
                         
                         <button onclick="toggleGridLike(${originalIndex}, event)" class="absolute top-3 right-3 bg-black/60 backdrop-blur-md px-2.5 py-1.5 rounded-xl flex items-center shadow-lg border border-white/10 md:hover:bg-black/80 transition-colors group/btn z-10">
-                            
                             <svg id="grid-like-icon-${originalIndex}" class="w-3.5 h-3.5 ${heartClass} md:group-hover/btn:scale-110 md:group-hover/btn:text-red-500 transition-all duration-300 mr-1.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"></path></svg>
-                            
                             <span id="grid-like-count-${originalIndex}" class="text-[10px] font-bold text-white tracking-wide">${dish.likes || 0} LIKES</span>
                         </button>
                     </div>
                     <div class="mb-4 flex-1">
                         <h3 class="text-lg font-bold text-white mb-1 group-hover:text-amber-400 transition">${dish.topTitle} ${dish.bottomTitle}</h3>
                         <p class="text-xs text-stone-400 font-medium">${dish.chef}</p>
+                        
+                        <!-- ADDED PICKUP LOCATION BADGE HERE -->
+                        <p class="text-[11px] text-amber-500/90 font-semibold mt-1.5 flex items-center gap-1">
+                            📍 ${dish.pickupZone || "Main Kitchen"}
+                        </p>
                     </div>
                     
                     <div class="w-full py-2.5 bg-white/5 group-hover:bg-amber-600 border border-white/5 rounded-xl text-sm font-semibold text-stone-200 transition flex items-center justify-center group-hover:border-transparent mt-auto">
