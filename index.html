@@ -13,6 +13,16 @@
             font-family: 'Poppins', sans-serif;
         }
 
+        /* Keep the fixed navbar in its own layer during smooth scrolling. */
+        nav {
+            position: fixed !important;
+            top: 0;
+            right: 0;
+            left: 0;
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
+        }
+
         /* Splash Screen Animations */
         .animate-title {
             animation: fadeSlideUp 1.2s ease-out forwards;
@@ -132,7 +142,7 @@
                             d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                     </svg>
                     <!-- The Input Field (Notice pr-10) -->
-                    <input type="text" id="search-input-desktop" onkeyup="handleSearch('search-input-desktop')"
+                    <input type="text" id="search-input-desktop" onkeyup="handleSearch('search-input-desktop', event)"
                         placeholder="Search menu..."
                         class="bg-[#3d2a1d]/60 border border-white/10 text-white text-sm font-medium rounded-full pl-9 pr-10 py-1.5 focus:outline-none focus:border-amber-500 transition w-36 md:w-48 placeholder-stone-500">
                     <!-- NEW: The Desktop Clear Button -->
@@ -2497,7 +2507,7 @@
                     countEl.innerText = `${matchCount} dish${matchCount !== 1 ? 'es' : ''} found`;
                 }
             }
-            // NEW: Only scroll down if the user actually typed something
+            // Refresh results and keep the navigation visible during the jump.
             if (searchQuery !== '') {
                 scrollToGrid();
             }
